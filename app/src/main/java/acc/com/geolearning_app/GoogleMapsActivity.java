@@ -1,8 +1,14 @@
 package acc.com.geolearning_app;
 
+import android.content.Context;
+import android.content.ContextWrapper;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.location.Location;
+import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
@@ -33,6 +39,18 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+
+import acc.com.geolearning_app.web.ServerController;
 
 /**
  * An activity that displays a map showing the place at the device's current location.
@@ -75,6 +93,9 @@ public class GoogleMapsActivity extends AppCompatActivity
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
+        getLocationPermission();
+
         super.onCreate(savedInstanceState);
 
         // Retrieve location and camera position from saved instance state.
@@ -99,6 +120,8 @@ public class GoogleMapsActivity extends AppCompatActivity
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+
+
 
     }
 
@@ -132,10 +155,35 @@ public class GoogleMapsActivity extends AppCompatActivity
      */
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == R.id.option_get_place) {
-            showCurrentPlace();
+
+        switch (item.getItemId()) {
+
+            case R.id.mis_mapas:
+                // User chose the "Settings" item, show the app settings UI...
+                return true;
+
+            case R.id.mapear:
+                if (item.getItemId() == R.id.mapear){
+                    //TODO llamar al servidor: mLastKnownLocation.getLat() y Lon()
+                    ServerController server = ServerController.getInstance();
+
+                    server.getCandidates(mLastKnownLocation.getLatitude(), mLastKnownLocation.getLongitude());
+                }
+                return true;
+
+            case R.id.option_get_place:
+
+                if (item.getItemId() == R.id.option_get_place) {
+                    showCurrentPlace();
+                }
+                return true;
+
+            default:
+                // If we got here, the user's action was not recognized.
+                // Invoke the superclass to handle it.
+                return super.onOptionsItemSelected(item);
+
         }
-        return true;
     }
 
     /**
@@ -252,6 +300,7 @@ public class GoogleMapsActivity extends AppCompatActivity
                 if (grantResults.length > 0
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     mLocationPermissionGranted = true;
+                    updateLocationUI();
                 }
             }
         }
@@ -392,4 +441,6 @@ public class GoogleMapsActivity extends AppCompatActivity
             Log.e("Exception: %s", e.getMessage());
         }
     }
+
+
 }

@@ -60,9 +60,9 @@ public class SqliteHelper extends SQLiteOpenHelper{
             + "( "
             + KEY_ID_MAP + " INTEGER PRIMARY KEY, "
             + KEY_LAT + " REAL, "
-            + KEY_LON + " REAL, "
-            + FOREIGN_KEY_USER + " INTEGER, "
-            + " FOREIGN KEY(" + FOREIGN_KEY_USER + ") REFERENCES " +  TABLE_USER + "(" + KEY_ID + ")"
+            + KEY_LON + " REAL "
+           /* + FOREIGN_KEY_USER + " INTEGER, "
+            + " FOREIGN KEY(" + FOREIGN_KEY_USER + ") REFERENCES " +  TABLE_USER + "(" + KEY_ID + ")"*/
             + " ) ";
 
     //CREAR tabla de lugares
@@ -85,7 +85,7 @@ public class SqliteHelper extends SQLiteOpenHelper{
     @Override
     public void onCreate(SQLiteDatabase sqLiteDatabase) {
         //Se crean las tablas
-        sqLiteDatabase.execSQL(SQL_TABLE_USER);
+        //sqLiteDatabase.execSQL(SQL_TABLE_USER);
         sqLiteDatabase.execSQL(SQL_TABLE_MAP);
         sqLiteDatabase.execSQL(SQL_TABLE_PLACE);
 
