@@ -1,5 +1,6 @@
 package acc.com.geolearning_app;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
@@ -40,6 +41,10 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 
+import acc.com.geolearning_app.db.SqliteHelper;
+import acc.com.geolearning_app.util.Server_Status;
+import acc.com.geolearning_app.web.ServerController;
+
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener,OnMapReadyCallback {
 
@@ -63,7 +68,7 @@ public class MainActivity extends AppCompatActivity
     // A default location (Sydney, Australia) and default zoom to use when location permission is
     // not granted.
     private final LatLng mDefaultLocation = new LatLng(-33.8523341, 151.2106085);
-    private static final int DEFAULT_ZOOM = 18;
+    private static final int DEFAULT_ZOOM = 16;
     private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1;
     private boolean mLocationPermissionGranted;
 
@@ -74,16 +79,15 @@ public class MainActivity extends AppCompatActivity
     // Keys for storing activity state.
     private static final String KEY_CAMERA_POSITION = "camera_position";
     private static final String KEY_LOCATION = "location";
+    /**********************************************/
+    /**********************************************/
+    /**********************************************/
 
-    // Used for selecting the current place.
-    private static final int M_MAX_ENTRIES = 5;
-    private String[] mLikelyPlaceNames;
-    private String[] mLikelyPlaceAddresses;
-    private String[] mLikelyPlaceAttributions;
-    private LatLng[] mLikelyPlaceLatLngs;
-    /**********************************************/
-    /**********************************************/
-    /**********************************************/
+    // insertar en BD
+    SqliteHelper sqliteHelper;
+
+    //controlar peticiones al servidor
+    Server_Status server_status = Server_Status.getInstance();
 
 
 
@@ -92,6 +96,7 @@ public class MainActivity extends AppCompatActivity
 
         //opciones de navigation drawer
         super.onCreate(savedInstanceState);
+        sqliteHelper = new SqliteHelper(this);
 
         // Retrieve location and camera position from saved instance state.
         if (savedInstanceState != null) {
@@ -124,8 +129,8 @@ public class MainActivity extends AppCompatActivity
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+
+                mappingActualPosition();
             }
         });
 
@@ -178,14 +183,17 @@ public class MainActivity extends AppCompatActivity
         int id = item.getItemId();
 
         if (id == R.id.actual_map) {
-            // Handle the camera action
+
+            mappingActualPosition();
+
         } else if (id == R.id.search_map) {
+            //buscar otra zona a mapear
 
         } else if (id == R.id.show_maps) {
             //Hacia Lista de zonas/mapas
-            /*Intent intent=new Intent(MainActivity.this,MapDetailActivity.class);
+            Intent intent=new Intent(MainActivity.this,ItemListActivity.class);
             startActivity(intent);
-            finish();*/
+            finish();
         }
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
@@ -229,6 +237,8 @@ public class MainActivity extends AppCompatActivity
                 return infoWindow;
             }
         });
+
+        map.setMapType(mMap.MAP_TYPE_SATELLITE);
 
         // Prompt the user for permission.
         getLocationPermission();
@@ -348,6 +358,34 @@ public class MainActivity extends AppCompatActivity
             }
         } catch (SecurityException e)  {
             Log.e("Exception: %s", e.getMessage());
+        }
+    }
+
+
+    //mapea la posicion actual llamando al controlador, que llame al servidor
+    public void mappingActualPosition(){
+
+        DrawerLayout drawerLayout = findViewById(R.id.drawer_layout);
+
+        if (!server_status.isBUSY_SERVER()) {
+
+            Snackbar.make(drawerLayout, R.string.server_working,
+                    Snackbar.LENGTH_INDEFINITE)
+                    .show();
+
+            server_status.setBUSY_SERVER(true);
+
+            //Mapear zona actual
+
+            //le paso el drawerLayout para mostrar un snackbar cuando acaba el proceso en el servidor
+            ServerController serverController = ServerController.getInstance(this, this.sqliteHelper, drawerLayout);
+            serverController.getCandidates(mLastKnownLocation.getLatitude(), mLastKnownLocation.getLongitude());
+
+        } else {
+
+            Snackbar.make(drawerLayout, R.string.server_busy,
+                    Snackbar.LENGTH_LONG)
+                    .show();
         }
     }
 }

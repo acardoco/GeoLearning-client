@@ -6,9 +6,13 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
-import acc.com.geolearning_app.dto.Map;
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.List;
+
 import acc.com.geolearning_app.dto.Place;
 import acc.com.geolearning_app.dto.User;
+import acc.com.geolearning_app.dto.Zone;
 
 public class SqliteHelper extends SQLiteOpenHelper{
 
@@ -20,7 +24,7 @@ public class SqliteHelper extends SQLiteOpenHelper{
 
     //TABLAS
     public static final String TABLE_USER = "user";
-    public static final String TABLE_MAP = "map";
+    public static final String TABLE_MAP = "map"; //Equivalente a ZONE
     public static final String TABLE_PLACE ="place";
 
 
@@ -118,7 +122,7 @@ public class SqliteHelper extends SQLiteOpenHelper{
     }
 
     //AÑADIR mapa
-    public void addMap(Map map){
+    public long addZone(Zone zone){
 
         //get writable database
         SQLiteDatabase db = this.getWritableDatabase();
@@ -126,16 +130,18 @@ public class SqliteHelper extends SQLiteOpenHelper{
         //create content values to insert
         ContentValues values = new ContentValues();
 
-        values.put(KEY_LAT, map.getLat());
-        values.put(KEY_LON, map.getLon());
-        values.put(FOREIGN_KEY_USER, map.getId_user().getId());
+        values.put(KEY_LAT, zone.getLat());
+        values.put(KEY_LON, zone.getLon());
+        //values.put(FOREIGN_KEY_USER, map.getId_user().getId());
 
         long todo_id = db.insert(TABLE_MAP, null, values);
+
+        return  todo_id;
 
     }
 
     //AÑADIR zona
-    public void addPlace(Place place){
+    public long addPlace(Place place){
 
         //get writable database
         SQLiteDatabase db = this.getWritableDatabase();
@@ -152,45 +158,48 @@ public class SqliteHelper extends SQLiteOpenHelper{
 
         long todo_id = db.insert(TABLE_PLACE, null, values);
 
+        return todo_id;
+
 
     }
 
-    public User Authenticate(User user) {
+    // obtener todas las zonas/mapas
+    public ArrayList<Zone> getAllElements() {
+
+        ArrayList<Zone> list = new ArrayList<Zone>();
+
+        // Select All Query
+        String selectQuery = "SELECT  * FROM " + TABLE_MAP;
+
         SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.query(TABLE_USER,// Selecting Table
-                new String[]{KEY_ID, KEY_USER_NAME, KEY_EMAIL, KEY_PASSWORD},//Selecting columns want to query
-                KEY_USER_NAME + "=?",
-                new String[]{user.getUserName()},//Where clause
-                null, null, null);
+        try {
 
-        if (cursor != null && cursor.moveToFirst()&& cursor.getCount()>0) {
-            //if cursor has value then in user database there is user associated with this given email
-            User user1 = new User(cursor.getString(0), cursor.getString(1), cursor.getString(2), cursor.getString(3));
+            Cursor cursor = db.rawQuery(selectQuery, null);
+            try {
 
-            //Match both passwords check they are same or not
-            if (user.getPassword().equalsIgnoreCase(user1.getPassword())) {
-                return user1;
+                // looping through all rows and adding to list
+                if (cursor.moveToFirst()) {
+                    do {
+                        Zone obj = new Zone();
+
+                        obj.setId(cursor.getString(0));
+
+                        obj.setLat(cursor.getDouble(1));
+
+                        obj.setLon(cursor.getDouble(2));
+
+                        list.add(obj);
+                    } while (cursor.moveToNext());
+                }
+
+            } finally {
+                try { cursor.close(); } catch (Exception ignore) {}
             }
+
+        } finally {
+            try { db.close(); } catch (Exception ignore) {}
         }
 
-        //if user password does not matches or there is no record with that email then return @false
-        return null;
-    }
-
-    public boolean isEmailExists(String email) {
-        SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.query(TABLE_USER,// Selecting Table
-                new String[]{KEY_ID, KEY_USER_NAME, KEY_EMAIL, KEY_PASSWORD},//Selecting columns want to query
-                KEY_EMAIL + "=?",
-                new String[]{email},//Where clause
-                null, null, null);
-
-        if (cursor != null && cursor.moveToFirst()&& cursor.getCount()>0) {
-            //if cursor has value then in user database there is user associated with this given email so return true
-            return true;
-        }
-
-        //if email does not exist return false
-        return false;
+        return list;
     }
 }

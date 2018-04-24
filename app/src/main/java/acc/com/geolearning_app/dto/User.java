@@ -8,7 +8,7 @@ public class User {
     private String userName;
     private String password;
     private String email;
-    private ArrayList<Map> maps = new ArrayList<>();
+    private ArrayList<Zone> maps = new ArrayList<>();
 
     public User(String id, String userName, String email, String password) {
         this.id = id;
@@ -49,19 +49,19 @@ public class User {
         this.email = email;
     }
 
-    public ArrayList<Map> getMaps() {
+    public ArrayList<Zone> getMaps() {
         return maps;
     }
 
-    public void setMaps(ArrayList<Map> maps) {
+    public void setMaps(ArrayList<Zone> maps) {
         this.maps = maps;
     }
 
-    public void addMap(Map map){
+    public void addMap(Zone map){
         this.maps.add(map);
     }
 
-    public void deleteMap(Map map){
+    public void deleteMap(Zone map){
         this.maps.remove(map);
     }
 }

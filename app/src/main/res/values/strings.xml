@@ -8,10 +8,15 @@
     <string name="title_activity_main">GeoLearning</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
-    <string name="nav_header_title">Geolearning: support mapping for OSM</string>
-    <string name="nav_header_subtitle">andres.cardosoc12@gmail.com</string>
+    <string name="nav_header_title">Geolearning:</string>
+    <string name="nav_header_subtitle">Support mapping for OSM</string>
     <string name="nav_header_desc">Geolearning</string>
     <string name="title_map_list">Maps</string>
     <string name="title_map_detail">Map Detail</string>
+    <string name="title_item_list">Zones</string>
+    <string name="title_item_detail">Zone detail</string>
+    <string name="server_working">Mapping request...</string>
+    <string name="server_busy">Server cannot accept requests for the moment.</string>
+    <string name="server_done">Mapping completed.</string>
 
 </resources>

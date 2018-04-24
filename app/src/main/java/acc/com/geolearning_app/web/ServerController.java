@@ -1,10 +1,13 @@
 package acc.com.geolearning_app.web;
 
+import android.content.Context;
 import android.content.ContextWrapper;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.support.design.widget.Snackbar;
+import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 
@@ -26,23 +29,43 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 
+import acc.com.geolearning_app.R;
+import acc.com.geolearning_app.db.SqliteHelper;
+import acc.com.geolearning_app.dto.Place;
+import acc.com.geolearning_app.dto.Zone;
+import acc.com.geolearning_app.util.Server_Status;
+
 public class ServerController extends AppCompatActivity {
 
     //singleton
     private static ServerController instance = null;
+
+    private double LAT;
+    private double LON;
+
+    private Context context;
+    private DrawerLayout drawerLayout;
+
 
     String urlbase = "https://maps.googleapis.com/maps/api/staticmap?center=";
     String urlcomun = "&zoom=18&format=jpg&size=400x400&maptype=satellite&key=";
     String urlkey= "AIzaSyB9qW-QzzGtT2xEsJlsuLgA5TOYNJS8ogo";
     String destinationFile = "image.jpg";
 
+    SqliteHelper sqliteHelper;
 
-    protected ServerController() {
+    Server_Status server_status = Server_Status.getInstance();
+
+
+    protected ServerController(Context context, SqliteHelper sqliteHelper, DrawerLayout drawerLayout) {
         // Exists only to defeat instantiation.
+        this.context = context;
+        this.sqliteHelper = sqliteHelper;
+        this.drawerLayout = drawerLayout;
     }
-    public static ServerController getInstance() {
+    public static ServerController getInstance(Context context, SqliteHelper sqliteHelper, DrawerLayout drawerLayout) {
         if(instance == null) {
-            instance = new ServerController();
+            instance = new ServerController(context, sqliteHelper, drawerLayout);
         }
         return instance;
     }
@@ -52,10 +75,13 @@ public class ServerController extends AppCompatActivity {
 
         AsyncTask myTask = new GetUrlJsonTask();
 
-        String url_local = "http://10.0.2.2:5000/predict"; //192.168.0.159
+        String url_local = "http://192.168.0.159:5000/predict"; //192.168.0.159
+
+        LAT = lat;
+        LON = lon;
 
         //valores de input
-        Object[] arg = new String[]{url_local,String.valueOf(lat),String.valueOf(lon)};
+        Object[] arg = new String[]{url_local,String.valueOf(LAT),String.valueOf(LON)};
 
 
         myTask.execute(arg);
@@ -178,11 +204,6 @@ public class ServerController extends AppCompatActivity {
     //TODO se pasa un json con lat y lon y se obtiene un hasmap con los candidatos
     private class GetUrlJsonTask extends AsyncTask<String,Void,String>{
 
-        protected void onPreExecute(){
-
-        }
-
-
         @Override
         protected String doInBackground(String... values) {
 
@@ -253,24 +274,43 @@ public class ServerController extends AppCompatActivity {
             super.onPostExecute(s);
             //progressDialog.dismiss();
             try {
-                JSONObject jsonObject = new JSONObject(s);
-                JSONArray jsonArray = jsonObject.getJSONArray("candidatos");
-                for (int i = 0; i < jsonArray.length(); i++) {
-                    String label = jsonArray.getJSONObject(i).getString("label");
-                    String x = jsonArray.getJSONObject(i).getString("x");
-                    String y = jsonArray.getJSONObject(i).getString("y");
-                    String w = jsonArray.getJSONObject(i).getString("w");
-                    String h = jsonArray.getJSONObject(i).getString("h");
-                    String prob = jsonArray.getJSONObject(i).getString("prob");
 
-                    /*textView.append(id + "\n");
-                    textView.append(name + "\n");
-                    textView.append(email + "\n");
-                    textView.append(mobile + "\n\n");*/
+                server_status.setBUSY_SERVER(false);
 
-                    // TODO guardarlo en un Hashmap o algo parecido
+                Snackbar.make(drawerLayout, R.string.server_done,
+                        Snackbar.LENGTH_LONG)
+                        .show();
+
+                if (s!=null) {
+                    JSONObject jsonObject = new JSONObject(s);
+                    JSONArray jsonArray = jsonObject.getJSONArray("candidatos");
+                    Zone zone = new Zone();
+                    zone.setLat(LAT);
+                    zone.setLon(LON);
+                    ArrayList<Place> puntos = new ArrayList<Place>();
+                    for (int i = 0; i < jsonArray.length(); i++) {
+                        String label = jsonArray.getJSONObject(i).getString("label");
+                        int x = Integer.parseInt(jsonArray.getJSONObject(i).getString("x"));
+                        int y = Integer.parseInt(jsonArray.getJSONObject(i).getString("y"));
+                        int w = Integer.parseInt(jsonArray.getJSONObject(i).getString("w"));
+                        int h = Integer.parseInt(jsonArray.getJSONObject(i).getString("h"));
+                        double prob = Double.parseDouble(jsonArray.getJSONObject(i).getString("prob"));
+                        Place place = new Place(x, y, w, h, label, zone, prob);
+                        puntos.add(place);
+                    }
+                    zone.setPlaces(puntos);
+
+                    //SQLITE
+                    long id_zone = sqliteHelper.addZone(zone);
+                    zone.setId(Long.toString(id_zone));
+                    for (int i = 0; i < puntos.size(); i++) {
+                        Place place = puntos.get(i);
+                        place.setId_map(zone);
+                        sqliteHelper.addPlace(puntos.get(i));
+                    }
 
                 }
+
 
             } catch (JSONException e) {
                 e.printStackTrace();

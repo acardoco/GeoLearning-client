@@ -8,17 +8,21 @@ public class Place {
     private Integer w;
     private Integer h;
     private String place_type;
-    private Map id_map;
+    private Double prob;
+    private Zone id_map;
 
-    public Place(String id, Integer x, Integer y, Integer w, Integer h, String place_type, Map id_map) {
-        this.id = id;
+
+
+    public Place(Integer x, Integer y, Integer w, Integer h, String place_type, Zone id_map, Double prob) {
         this.x = x;
         this.y = y;
         this.w = w;
         this.h = h;
         this.place_type = place_type;
         this.id_map = id_map;
+        this.prob = prob;
     }
+
 
     public String getId() {
         return this.id;
@@ -68,11 +72,15 @@ public class Place {
         this.place_type = place_type;
     }
 
-    public Map getId_map() {
+
+
+    public Zone getId_map() {
         return this.id_map;
     }
 
-    public void setId_map(Map id_map) {
+    public void setId_map(Zone id_map) {
         this.id_map = id_map;
     }
+
+
 }
