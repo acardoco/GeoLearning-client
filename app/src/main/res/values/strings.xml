@@ -14,7 +14,7 @@
     <string name="title_map_list">Maps</string>
     <string name="title_map_detail">Map Detail</string>
     <string name="title_item_list">Zones</string>
-    <string name="title_item_detail">Zone detail</string>
+    <string name="title_item_detail">Places</string>
     <string name="server_working">Mapping request...</string>
     <string name="server_busy">Server cannot accept requests for the moment.</string>
     <string name="server_done">Mapping completed.</string>

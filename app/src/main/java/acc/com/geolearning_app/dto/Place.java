@@ -23,6 +23,10 @@ public class Place {
         this.prob = prob;
     }
 
+    public Place(){
+
+    }
+
 
     public String getId() {
         return this.id;

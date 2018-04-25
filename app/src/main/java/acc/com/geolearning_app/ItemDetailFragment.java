@@ -7,10 +7,16 @@ import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
 import android.widget.TextView;
 
+import java.util.ArrayList;
+
+import acc.com.geolearning_app.db.SqliteHelper;
+import acc.com.geolearning_app.dto.Place;
 import acc.com.geolearning_app.dto.Zone;
-import acc.com.geolearning_app.dummy.DummyContent;
+
 
 /**
  * A fragment representing a single Item detail screen.
@@ -24,6 +30,9 @@ public class ItemDetailFragment extends Fragment {
      * represents.
      */
     public static final String ARG_ITEM_ID = "item_id";
+
+    //Sqlite
+    SqliteHelper sqliteHelper;
 
     /**
      * The dummy content this fragment is presenting.
@@ -42,15 +51,19 @@ public class ItemDetailFragment extends Fragment {
         super.onCreate(savedInstanceState);
 
         if (getArguments().containsKey(ARG_ITEM_ID)) {
+
+            sqliteHelper  = new SqliteHelper(getActivity());
+
             // Load the dummy content specified by the fragment
             // arguments. In a real-world scenario, use a Loader
             // to load content from a content provider.
-            mItem = Zone.ZONE_MAP.get(getArguments().getString(ARG_ITEM_ID));
+            //mItem = Zone.ZONE_MAP.get(getArguments().getString(ARG_ITEM_ID));
+            mItem = sqliteHelper.getZona(getArguments().getString(ARG_ITEM_ID));
 
             Activity activity = this.getActivity();
             CollapsingToolbarLayout appBarLayout = (CollapsingToolbarLayout) activity.findViewById(R.id.toolbar_layout);
             if (appBarLayout != null) {
-                appBarLayout.setTitle(mItem.getContent());
+                appBarLayout.setTitle("Zone with id: " + mItem.getId());
             }
         }
     }
@@ -60,9 +73,12 @@ public class ItemDetailFragment extends Fragment {
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.item_detail, container, false);
 
-        // Show the dummy content as text in a TextView.
+        ArrayList<Place> lugares = sqliteHelper.getAllElements(getArguments().getString(ARG_ITEM_ID));
+
         if (mItem != null) {
-            ((TextView) rootView.findViewById(R.id.item_detail)).setText(mItem.getDetails());
+            PlaceAdapter adapter = new PlaceAdapter(getActivity(),lugares);
+            ListView lv= (ListView) rootView.findViewById(R.id.item_detail);
+            lv.setAdapter(adapter);
         }
 
         return rootView;

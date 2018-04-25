@@ -167,39 +167,95 @@ public class SqliteHelper extends SQLiteOpenHelper{
     public ArrayList<Zone> getAllElements() {
 
         ArrayList<Zone> list = new ArrayList<Zone>();
-
         // Select All Query
         String selectQuery = "SELECT  * FROM " + TABLE_MAP;
-
         SQLiteDatabase db = this.getReadableDatabase();
         try {
-
             Cursor cursor = db.rawQuery(selectQuery, null);
             try {
-
                 // looping through all rows and adding to list
                 if (cursor.moveToFirst()) {
                     do {
+
                         Zone obj = new Zone();
-
                         obj.setId(cursor.getString(0));
-
                         obj.setLat(cursor.getDouble(1));
-
                         obj.setLon(cursor.getDouble(2));
-
                         list.add(obj);
+
                     } while (cursor.moveToNext());
                 }
-
             } finally {
                 try { cursor.close(); } catch (Exception ignore) {}
             }
-
         } finally {
             try { db.close(); } catch (Exception ignore) {}
         }
-
         return list;
+    }
+
+
+
+    //obtiene los lugares de una zona
+    public ArrayList<Place> getAllElements(String id) {
+        ArrayList<Place> list = new ArrayList<Place>();
+        // Select All Query
+        String selectQuery = "SELECT DISTINCT  P.id_place, P.x, P.y, P.w, P.h, P.place_type FROM "
+                + TABLE_PLACE
+                + " P JOIN "
+                + TABLE_MAP
+                + " Z ON P.place_mapper=Z.id_map WHERE P."
+                + FOREIGN_KEY_MAP + " = " + id;
+        SQLiteDatabase db = this.getReadableDatabase();
+        try {
+            Cursor cursor = db.rawQuery(selectQuery, null);
+            try {
+                // looping through all rows and adding to list
+                if (cursor.moveToFirst()) {
+                    do {
+
+                        Place obj = new Place();
+                        obj.setId(cursor.getString(0));
+                        obj.setX(cursor.getInt(1));
+                        obj.setY(cursor.getInt(2));
+                        obj.setW(cursor.getInt(3));
+                        obj.setH(cursor.getInt(4));
+                        obj.setPlace_type(cursor.getString(5));
+                        list.add(obj);
+
+                    } while (cursor.moveToNext());
+                }
+            } finally {
+                try { cursor.close(); } catch (Exception ignore) {}
+            }
+        } finally {
+            try { db.close(); } catch (Exception ignore) {}
+        }
+        return list;
+    }
+
+    public Zone getZona(String id){
+
+        Zone obj = new Zone();
+
+        String selectQuery = "SELECT  * FROM " + TABLE_MAP + " WHERE " + KEY_ID_MAP + "=" + id;
+        SQLiteDatabase db = this.getReadableDatabase();
+
+        Cursor cursor = db.rawQuery(selectQuery, null);
+
+        if (cursor.moveToFirst()) {
+
+            obj.setId(cursor.getString(0));
+            obj.setLat(cursor.getDouble(1));
+            obj.setLon(cursor.getDouble(2));
+
+
+        }
+
+        cursor.close();
+        db.close();
+
+        return obj;
+
     }
 }

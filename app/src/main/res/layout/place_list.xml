@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content" >
+
+    <ImageView
+        android:id="@+id/icono_lugar"
+        android:layout_width="45dp"
+        android:layout_height="19dp"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="13dp"
+        app:srcCompat="@drawable/parking" />
+
+    <TextView
+        android:id="@+id/coordenadas"
+        android:layout_width="112dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="13dp"
+        android:layout_toRightOf="@+id/icono_lugar"
+        android:text="TextView1" />
+
+    <TextView
+        android:id="@+id/clase_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@+id/coordenadas"
+        android:layout_toRightOf="@+id/coordenadas"
+        android:text="TextView2" />
+
+
+</RelativeLayout>
