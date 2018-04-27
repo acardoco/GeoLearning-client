@@ -38,11 +38,17 @@ import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polygon;
+import com.google.android.gms.maps.model.PolygonOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 
+import java.util.ArrayList;
+
 import acc.com.geolearning_app.db.SqliteHelper;
+import acc.com.geolearning_app.dto.Zone;
 import acc.com.geolearning_app.util.Server_Status;
+import acc.com.geolearning_app.util.utils;
 import acc.com.geolearning_app.web.ServerController;
 
 public class MainActivity extends AppCompatActivity
@@ -68,7 +74,7 @@ public class MainActivity extends AppCompatActivity
     // A default location (Sydney, Australia) and default zoom to use when location permission is
     // not granted.
     private final LatLng mDefaultLocation = new LatLng(-33.8523341, 151.2106085);
-    private static final int DEFAULT_ZOOM = 16;
+    private static final int DEFAULT_ZOOM = 15;
     private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1;
     private boolean mLocationPermissionGranted;
 
@@ -79,12 +85,17 @@ public class MainActivity extends AppCompatActivity
     // Keys for storing activity state.
     private static final String KEY_CAMERA_POSITION = "camera_position";
     private static final String KEY_LOCATION = "location";
+
+    private double marker_lat = 33.8523341;
+    private double marker_lon = 151.2106085;
     /**********************************************/
     /**********************************************/
     /**********************************************/
 
     // insertar en BD
     SqliteHelper sqliteHelper;
+
+    ArrayList<Zone> zonas = new ArrayList<Zone>();
 
     //controlar peticiones al servidor
     Server_Status server_status = Server_Status.getInstance();
@@ -125,12 +136,14 @@ public class MainActivity extends AppCompatActivity
 
         //GOOGLE MAPS --
 
+        zonas = sqliteHelper.getAllElements();
+
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
 
-                mappingActualPosition();
+                mappingActualPosition(mLastKnownLocation.getLatitude(), mLastKnownLocation.getLongitude());
             }
         });
 
@@ -170,6 +183,9 @@ public class MainActivity extends AppCompatActivity
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+
+            obtenerPoligono(); //TODO cambiar icono
+
             return true;
         }
 
@@ -184,7 +200,7 @@ public class MainActivity extends AppCompatActivity
 
         if (id == R.id.actual_map) {
 
-            mappingActualPosition();
+            mappingActualPosition(mLastKnownLocation.getLatitude(), mLastKnownLocation.getLongitude());
 
         } else if (id == R.id.search_map) {
             //buscar otra zona a mapear
@@ -211,6 +227,27 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onMapReady(GoogleMap map) {
         mMap = map;
+
+        //añadir nueva localizacion a mano
+        mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
+            @Override
+            public void onMapClick(LatLng point) {
+                // TODO Auto-generated method stub
+                mMap.clear();
+
+                mLastKnownLocation.setLatitude(point.latitude);
+                mLastKnownLocation.setLongitude(point.longitude);
+
+                MarkerOptions marker = new MarkerOptions().position(
+                        new LatLng(point.latitude, point.longitude)).title("Lat: "
+                        + String.valueOf(point.latitude)
+                        + "\nLon: "
+                        + String.valueOf(point.longitude));
+
+
+                mMap.addMarker(marker);
+            }
+        });
 
         // Use a custom info window adapter to handle multiple lines of text in the
         // info window contents.
@@ -363,7 +400,7 @@ public class MainActivity extends AppCompatActivity
 
 
     //mapea la posicion actual llamando al controlador, que llame al servidor
-    public void mappingActualPosition(){
+    public void mappingActualPosition(double lat, double lon){
 
         DrawerLayout drawerLayout = findViewById(R.id.drawer_layout);
 
@@ -379,13 +416,63 @@ public class MainActivity extends AppCompatActivity
 
             //le paso el drawerLayout para mostrar un snackbar cuando acaba el proceso en el servidor
             ServerController serverController = ServerController.getInstance(this, this.sqliteHelper, drawerLayout);
-            serverController.getCandidates(mLastKnownLocation.getLatitude(), mLastKnownLocation.getLongitude());
+            serverController.getCandidates(lat, lon);
 
         } else {
 
             Snackbar.make(drawerLayout, R.string.server_busy,
                     Snackbar.LENGTH_LONG)
                     .show();
+        }
+    }
+
+    //obtiene las coordenadas de las esquinas de una zona y las printea en el mapa (para ZOOM=18) y 640x640
+    //TODO adaptarlo a los tamaños de 400x400
+    //TODO se queda siempre con el punt ocentral de la loc actual
+    public void obtenerPoligono(){
+
+        zonas = sqliteHelper.getAllElements();
+
+        Double desplazamientoAA = 0.0019688; //0.0026700 en 640
+        Double desplazamientoIZDE = 0.0021938; //0.0035100 en 640
+
+        Double aa = desplazamientoAA/2; //lat
+        Double izde = desplazamientoIZDE/2; //lon
+
+        for (Zone lugar: zonas){
+
+            Double lat = lugar.getLat();
+            Double lon = lugar.getLon();
+
+            /*
+            y           h
+
+
+            x           w
+             */
+
+            Double latx = lat - aa;
+            Double lonx = lon - izde;
+
+            Double laty = lat + aa;
+            Double lony = lon - izde;
+
+            Double latw = lat - aa;
+            Double lonw = lon + izde;
+
+            Double lath = lat + aa;
+            Double lonh = lon + izde;
+
+            PolygonOptions rectOptions = new PolygonOptions()
+                    .add(
+                            new LatLng(latw, lonw),
+                            new LatLng(latx, lonx),
+                            new LatLng(laty, lony),
+                            new LatLng(lath, lonh)
+                            ).strokeColor(R.color.colorPrimary).fillColor(R.color.colorAccent);
+
+            Polygon polygon = mMap.addPolygon(rectOptions);
+
         }
     }
 }

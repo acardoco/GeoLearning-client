@@ -1,21 +1,37 @@
 package acc.com.geolearning_app;
 
 import android.app.Activity;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.RectF;
+import android.graphics.drawable.BitmapDrawable;
+import android.os.AsyncTask;
 import android.support.design.widget.CollapsingToolbarLayout;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import com.davemorrissey.labs.subscaleview.ImageSource;
+import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
+
+import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.concurrent.ExecutionException;
 
 import acc.com.geolearning_app.db.SqliteHelper;
 import acc.com.geolearning_app.dto.Place;
 import acc.com.geolearning_app.dto.Zone;
+import acc.com.geolearning_app.util.utils;
 
 
 /**
@@ -76,11 +92,81 @@ public class ItemDetailFragment extends Fragment {
         ArrayList<Place> lugares = sqliteHelper.getAllElements(getArguments().getString(ARG_ITEM_ID));
 
         if (mItem != null) {
-            PlaceAdapter adapter = new PlaceAdapter(getActivity(),lugares);
-            ListView lv= (ListView) rootView.findViewById(R.id.item_detail);
-            lv.setAdapter(adapter);
+
+            TextView txt= (TextView) rootView.findViewById(R.id.item_detail_list);
+            txt.setText(" Places: " + lugares.size() + "\n" + " Accuracy: 80%"
+                    );
+
+
+
+            ImageView image = (ImageView) rootView.findViewById(R.id.item_detail_image);
+
+            String url_lat_lon = utils.getStringUrl(mItem.getLat(),mItem.getLon());
+
+            //++
+
+            Bitmap bitmap = null;
+
+            AsyncTask<String,Void,Bitmap> task = new DownloadImageTask(bitmap);
+
+            try {
+                bitmap = task.execute(url_lat_lon).get();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            }
+
+            /*new DownloadImageTask(image)
+                    .execute(url_lat_lon);*/
+
+            Bitmap bmp= bitmap.copy(Bitmap.Config.ARGB_8888, true);
+            Canvas cnvs=new Canvas(bmp);
+            //img.setImageBitmap(bmp);
+
+            Paint paint=new Paint();
+            paint.setColor(Color.RED);
+
+            cnvs.drawBitmap(bmp,0,0,null);
+            cnvs.drawRect(20, 20,50,50 , paint);
+
+            image.setImageBitmap(bmp);
+
+            //--
+
+
+
+
         }
 
         return rootView;
     }
+
+
+    // Llama al servidor de Google Maps y devuelve una imagen convertida a Bitmap
+    private class DownloadImageTask extends AsyncTask<String, Void, Bitmap> {
+        Bitmap bmImage;
+
+        public DownloadImageTask(Bitmap bmImage) {
+            this.bmImage = bmImage;
+        }
+
+        protected Bitmap doInBackground(String... urls) {
+            String urldisplay = urls[0];
+            Bitmap mIcon11 = null;
+            try {
+                InputStream in = new java.net.URL(urldisplay).openStream();
+                mIcon11 = BitmapFactory.decodeStream(in);
+            } catch (Exception e) {
+                Log.e("Error", e.getMessage());
+                e.printStackTrace();
+            }
+            return mIcon11;
+        }
+
+        protected void onPostExecute(Bitmap result) {
+            bmImage = result;
+        }
+    }
+
 }

@@ -11,6 +11,9 @@ import android.support.v7.app.ActionBar;
 import android.support.v4.app.NavUtils;
 import android.view.MenuItem;
 
+import acc.com.geolearning_app.db.SqliteHelper;
+import acc.com.geolearning_app.dto.Zone;
+
 /**
  * An activity representing a single Item detail screen. This
  * activity is only used on narrow width devices. On tablet-size devices,
@@ -18,6 +21,7 @@ import android.view.MenuItem;
  * in a {@link ItemListActivity}.
  */
 public class ItemDetailActivity extends AppCompatActivity {
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,8 +34,10 @@ public class ItemDetailActivity extends AppCompatActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own detail action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+                Intent intent = new Intent(ItemDetailActivity.this, EditZoneActivity.class);
+                intent.putExtra("id_zone",getIntent().getStringExtra(ItemDetailFragment.ARG_ITEM_ID));
+                startActivity(intent);
+                finish();
             }
         });
 

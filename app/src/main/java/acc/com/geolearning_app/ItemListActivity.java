@@ -17,6 +17,7 @@ import android.widget.TextView;
 import acc.com.geolearning_app.db.SqliteHelper;
 import acc.com.geolearning_app.dto.Zone;
 import acc.com.geolearning_app.dummy.DummyContent;
+import acc.com.geolearning_app.util.utils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -127,8 +128,9 @@ public class ItemListActivity extends AppCompatActivity {
         @Override
         public void onBindViewHolder(final ViewHolder holder, int position) {
             //holder.mIdView.setText(mValues.get(position).getId());
-            holder.mContentView1.setText("Lat.: " + mValues.get(position).getLat().toString());
-            holder.mContentView2.setText("Lon.: " + mValues.get(position).getLon().toString());
+
+            holder.mContentView1.setText("Lat.: " + utils.truncateDecimal(mValues.get(position).getLat(),4).toString());
+            holder.mContentView2.setText("Lon.: " + utils.truncateDecimal(mValues.get(position).getLon(),4).toString());
 
             holder.itemView.setTag(mValues.get(position));
             holder.itemView.setOnClickListener(mOnClickListener);
@@ -161,4 +163,6 @@ public class ItemListActivity extends AppCompatActivity {
         startActivity(intent);
         finish();
     }
+
+
 }

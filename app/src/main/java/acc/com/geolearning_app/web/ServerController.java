@@ -34,6 +34,7 @@ import acc.com.geolearning_app.db.SqliteHelper;
 import acc.com.geolearning_app.dto.Place;
 import acc.com.geolearning_app.dto.Zone;
 import acc.com.geolearning_app.util.Server_Status;
+import acc.com.geolearning_app.util.utils;
 
 public class ServerController extends AppCompatActivity {
 
@@ -94,7 +95,7 @@ public class ServerController extends AppCompatActivity {
 
         AsyncTask mMyTask = new GetUrlImageTask();
 
-        String string_final = getStringUrl(lat,lon);
+        String string_final = utils.getStringUrl(lat,lon);
         URL url_final =  stringToURL(string_final);
 
         Object[] arg = new URL[]{url_final,null,null};
@@ -373,21 +374,5 @@ public class ServerController extends AppCompatActivity {
         // Return the saved image Uri
         return savedImageURI;
     }
-
-    //CCNSTRUYE una url en formato String
-    private String getStringUrl(double lat, double lon){
-
-        StringBuilder url_total = new StringBuilder();
-        url_total.append(urlbase)
-                .append(lat)
-                .append(",")
-                .append(lon)
-                .append(urlcomun)
-                .append(urlkey);
-
-        return url_total.toString();
-
-    }
-
 
 }
