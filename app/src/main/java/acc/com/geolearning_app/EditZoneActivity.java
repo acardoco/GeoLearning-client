@@ -2,17 +2,12 @@ package acc.com.geolearning_app;
 
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.drawable.Drawable;
-import android.os.AsyncTask;
+import android.graphics.Color;
+import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
-import android.widget.ImageView;
 import android.widget.ListView;
 
 import org.osmdroid.api.IMapController;
@@ -20,10 +15,11 @@ import org.osmdroid.config.Configuration;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
+import org.osmdroid.views.overlay.Marker;
+import org.osmdroid.views.overlay.Polygon;
 
-import java.io.InputStream;
-import java.net.URL;
 import java.util.ArrayList;
+import java.util.List;
 
 import acc.com.geolearning_app.db.SqliteHelper;
 import acc.com.geolearning_app.dto.Place;
@@ -34,7 +30,9 @@ public class EditZoneActivity extends AppCompatActivity {
 
     SqliteHelper sqliteHelper;
 
-    MapView map = null;
+    MapView map;
+
+    ArrayList<Place> lugares;
 
     Zone zone;
 
@@ -56,15 +54,33 @@ public class EditZoneActivity extends AppCompatActivity {
         });
 
         zone = sqliteHelper.getZona(getIntent().getStringExtra("id_zone"));
+        loadMap();
+
+
         //rellenar ListView
-        ArrayList<Place> lugares = sqliteHelper.getAllElements(zone.getId());
-        PlaceAdapter adapter = new PlaceAdapter(this,lugares);
-        ListView lv= (ListView) findViewById(R.id.list_edit_view);
+        lugares = sqliteHelper.getAllElements(zone.getId());
+        PlaceAdapter adapter = new PlaceAdapter(this,lugares,map,zone);
+        final ListView lv= (ListView) findViewById(R.id.list_edit_view);
         lv.setAdapter(adapter);
 
-        //---------------OSM------------------------------
-        //-------------------------------------------------
-        //-------------------------------------------------
+        //dibujar poligonos de los lugares
+        utils.drawPolygons(map,lugares,zone);
+
+
+    }
+
+    public void onResume(){
+        super.onResume();
+        //this will refresh the osmdroid configuration on resuming.
+        //if you make changes to the configuration, use
+        //SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        //Configuration.getInstance().load(this, PreferenceManager.getDefaultSharedPreferences(this));
+        map.onResume(); //needed for compass, my location overlays, v6.0.0 and up
+    }
+
+
+    public void loadMap(){
+
         //load/initialize the osmdroid configuration, this can be done
         Context ctx = getApplicationContext();
         Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx));
@@ -85,19 +101,7 @@ public class EditZoneActivity extends AppCompatActivity {
         mapController.setZoom(19);
         GeoPoint startPoint = new GeoPoint(zone.getLat(),zone.getLon());
         mapController.setCenter(startPoint);
-        //-------------------------------------------------
-        //-------------------------------------------------
-        //-------------------------------------------------
 
-    }
-
-    public void onResume(){
-        super.onResume();
-        //this will refresh the osmdroid configuration on resuming.
-        //if you make changes to the configuration, use
-        //SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        //Configuration.getInstance().load(this, PreferenceManager.getDefaultSharedPreferences(this));
-        map.onResume(); //needed for compass, my location overlays, v6.0.0 and up
     }
 
     public void onPause(){
@@ -118,6 +122,7 @@ public class EditZoneActivity extends AppCompatActivity {
         startActivity(intent);
         finish();
     }
+
 
 
 }

@@ -30,8 +30,6 @@ dependencies {
     implementation 'com.android.support:recyclerview-v7:27.1.1'
     //osm
     implementation 'org.osmdroid:osmdroid-android:6.0.1'
-    //editar imageviews
-    implementation 'com.davemorrissey.labs:subsampling-scale-image-view:3.0.0'
 
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.1'

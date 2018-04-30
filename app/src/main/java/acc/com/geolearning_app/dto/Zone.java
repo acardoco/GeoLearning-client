@@ -21,7 +21,6 @@ public class Zone {
         ZONE_MAP.put(item.getId(), item);
     }
 
-    //TODO mostrar los Places de cada Zone
     private static String makeDetails(int position) {
         StringBuilder builder = new StringBuilder();
         builder.append("Details about Item: ").append(position);

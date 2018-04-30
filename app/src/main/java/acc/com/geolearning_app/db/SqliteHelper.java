@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import acc.com.geolearning_app.dto.Place;
+import acc.com.geolearning_app.dto.Tag;
 import acc.com.geolearning_app.dto.User;
 import acc.com.geolearning_app.dto.Zone;
 
@@ -23,23 +24,17 @@ public class SqliteHelper extends SQLiteOpenHelper{
     public static final int DATABASE_VERSION = 1;
 
     //TABLAS
-    public static final String TABLE_USER = "user";
     public static final String TABLE_MAP = "map"; //Equivalente a ZONE
     public static final String TABLE_PLACE ="place";
+    public static final String TABLE_TAG = "tag";
 
 
     //ATRIBUTOS user
-    //ID COLUMN @primaryKey
-    public static final String KEY_ID = "id_user";
-    public static final String KEY_USER_NAME = "username";
-    public static final String KEY_EMAIL = "email";
-    public static final String KEY_PASSWORD = "password";
 
     //ATRIBUTOS map
     public static final String KEY_ID_MAP = "id_map";
     public static final String KEY_LAT = "lat";
     public static final String KEY_LON ="lon";
-    public static final String FOREIGN_KEY_USER = "map_user";
 
     //ATRIBUTOS place
     public static final String KEY_ID_PLACE = "id_place";
@@ -50,14 +45,11 @@ public class SqliteHelper extends SQLiteOpenHelper{
     public static final String KEY_TYPE = "place_type";
     public static final String FOREIGN_KEY_MAP = "place_mapper";
 
-    //CREAR tabla de usuarios
-    public static final String SQL_TABLE_USER = " CREATE TABLE " + TABLE_USER
-            + " ( "
-            + KEY_ID + " INTEGER PRIMARY KEY, "
-            + KEY_USER_NAME + " TEXT, "
-            + KEY_EMAIL + " TEXT, "
-            + KEY_PASSWORD + " TEXT"
-            + " ) ";
+    //ATRIBUTOS tag
+    public static final String KEY_ID_TAG ="id_tag";
+    public static final String KEY_KEY = "tag_key";
+    public static final String KEY_VALUE = "value";
+    public static final String FOREIGN_KEY_PLACE = "id_place";
 
     //CREAR tabla de mapas
     public static final String SQL_TABLE_MAP = " CREATE TABLE " + TABLE_MAP
@@ -65,8 +57,6 @@ public class SqliteHelper extends SQLiteOpenHelper{
             + KEY_ID_MAP + " INTEGER PRIMARY KEY, "
             + KEY_LAT + " REAL, "
             + KEY_LON + " REAL "
-           /* + FOREIGN_KEY_USER + " INTEGER, "
-            + " FOREIGN KEY(" + FOREIGN_KEY_USER + ") REFERENCES " +  TABLE_USER + "(" + KEY_ID + ")"*/
             + " ) ";
 
     //CREAR tabla de lugares
@@ -82,6 +72,16 @@ public class SqliteHelper extends SQLiteOpenHelper{
             + " FOREIGN KEY(" + FOREIGN_KEY_MAP + ") REFERENCES " +  TABLE_MAP + "(" + KEY_ID_MAP + ")"
             + " ) ";
 
+    //CREAR tabla de tags
+    public static final String SQL_TABLE_TAG = " CREATE TABLE " + TABLE_TAG
+            + "( "
+            + KEY_ID_TAG + " INTEGER PRIMARY KEY, "
+            + KEY_KEY + " TEXT, "
+            + KEY_VALUE + " TEXT, "
+            + FOREIGN_KEY_PLACE + " INTEGER, "
+            + " FOREIGN KEY(" + FOREIGN_KEY_PLACE + ") REFERENCES " +  TABLE_PLACE + "(" + KEY_ID_PLACE + ")"
+            + " ) ";
+
     public SqliteHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
@@ -89,7 +89,7 @@ public class SqliteHelper extends SQLiteOpenHelper{
     @Override
     public void onCreate(SQLiteDatabase sqLiteDatabase) {
         //Se crean las tablas
-        //sqLiteDatabase.execSQL(SQL_TABLE_USER);
+        sqLiteDatabase.execSQL(SQL_TABLE_TAG);
         sqLiteDatabase.execSQL(SQL_TABLE_MAP);
         sqLiteDatabase.execSQL(SQL_TABLE_PLACE);
 
@@ -98,27 +98,9 @@ public class SqliteHelper extends SQLiteOpenHelper{
     @Override
     public void onUpgrade(SQLiteDatabase sqLiteDatabase, int i, int i1) {
         //drop table to create new one if database version updated
+        sqLiteDatabase.execSQL(" DROP TABLE IF EXISTS " + TABLE_TAG);
         sqLiteDatabase.execSQL(" DROP TABLE IF EXISTS " + TABLE_PLACE);
         sqLiteDatabase.execSQL(" DROP TABLE IF EXISTS " + TABLE_MAP);
-        sqLiteDatabase.execSQL(" DROP TABLE IF EXISTS " + TABLE_USER);
-    }
-
-    //AÑADIR usuario
-    public void addUser(User user) {
-
-        //get writable database
-        SQLiteDatabase db = this.getWritableDatabase();
-
-        //create content values to insert
-        ContentValues values = new ContentValues();
-
-
-        values.put(KEY_USER_NAME, user.getUserName());
-        values.put(KEY_EMAIL, user.getEmail());
-        values.put(KEY_PASSWORD, user.getPassword());
-
-        // insert row
-        long todo_id = db.insert(TABLE_USER, null, values);
     }
 
     //AÑADIR mapa
@@ -132,11 +114,9 @@ public class SqliteHelper extends SQLiteOpenHelper{
 
         values.put(KEY_LAT, zone.getLat());
         values.put(KEY_LON, zone.getLon());
-        //values.put(FOREIGN_KEY_USER, map.getId_user().getId());
 
-        long todo_id = db.insert(TABLE_MAP, null, values);
 
-        return  todo_id;
+        return  db.insert(TABLE_MAP, null, values);
 
     }
 
@@ -156,10 +136,23 @@ public class SqliteHelper extends SQLiteOpenHelper{
         values.put(KEY_TYPE, place.getPlace_type());
         values.put(FOREIGN_KEY_MAP, place.getId_map().getId());
 
-        long todo_id = db.insert(TABLE_PLACE, null, values);
+        return db.insert(TABLE_PLACE, null, values);
 
-        return todo_id;
+    }
 
+    public long addTag(Tag tag){
+
+        //get writable database
+        SQLiteDatabase db = this.getWritableDatabase();
+
+        //create content values to insert
+        ContentValues values = new ContentValues();
+
+        values.put(KEY_KEY,tag.getKey());
+        values.put(KEY_VALUE,tag.getValue());
+        values.put(FOREIGN_KEY_PLACE,tag.getId_place().getId());
+
+        return db.insert(TABLE_TAG, null, values);
 
     }
 
@@ -234,6 +227,44 @@ public class SqliteHelper extends SQLiteOpenHelper{
         return list;
     }
 
+
+    // obtener tags de un lugar
+    public ArrayList<Tag> getAllTags(String id) {
+
+        ArrayList<Tag> list = new ArrayList<Tag>();
+        // Select All Query
+        String selectQuery = "SELECT DISTINCT  T.id_tag, T.tag_key, T.value FROM "
+                + TABLE_TAG
+                + " T JOIN "
+                + TABLE_PLACE
+                + " P ON T.id_place=P.id_place WHERE T."
+                + FOREIGN_KEY_PLACE + " = " + id;
+
+        SQLiteDatabase db = this.getReadableDatabase();
+        try {
+            Cursor cursor = db.rawQuery(selectQuery, null);
+            try {
+                // looping through all rows and adding to list
+                if (cursor.moveToFirst()) {
+                    do {
+
+                        Tag obj = new Tag();
+                        obj.setId(cursor.getString(0));
+                        obj.setKey(cursor.getString(1));
+                        obj.setValue(cursor.getString(2));
+                        list.add(obj);
+
+                    } while (cursor.moveToNext());
+                }
+            } finally {
+                try { cursor.close(); } catch (Exception ignore) {}
+            }
+        } finally {
+            try { db.close(); } catch (Exception ignore) {}
+        }
+        return list;
+    }
+
     public Zone getZona(String id){
 
         Zone obj = new Zone();
@@ -258,4 +289,22 @@ public class SqliteHelper extends SQLiteOpenHelper{
         return obj;
 
     }
+
+    public boolean deleteLugar(String id){
+
+        SQLiteDatabase db = this.getReadableDatabase();
+
+        return db.delete(TABLE_PLACE,KEY_ID_PLACE + "=" + id,null) > 0;
+
+    }
+
+    public boolean deleteTag(String id){
+
+        SQLiteDatabase db = this.getReadableDatabase();
+
+        return db.delete(TABLE_TAG,KEY_ID_TAG + "=" + id,null) > 0;
+
+    }
+
+
 }

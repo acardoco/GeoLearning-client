@@ -1,6 +1,8 @@
 package acc.com.geolearning_app;
 
+import android.app.Dialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
@@ -10,6 +12,7 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AlertDialog;
 import android.util.Log;
 import android.view.View;
 import android.support.design.widget.NavigationView;
@@ -22,6 +25,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.FrameLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
@@ -44,6 +48,8 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import acc.com.geolearning_app.db.SqliteHelper;
 import acc.com.geolearning_app.dto.Zone;
@@ -100,7 +106,20 @@ public class MainActivity extends AppCompatActivity
     //controlar peticiones al servidor
     Server_Status server_status = Server_Status.getInstance();
 
+    //-----------------------
+    //DIALOGO de las opciones
+    //-----------------------
+    // Build an AlertDialog
+    AlertDialog.Builder builder;
 
+    // String array for alert dialog multi choice items
+    String[] opciones = new String[]{"Satellite view", "See zones"};
+    // Boolean array for initial selected items
+    final boolean[] checkedOpciones = new boolean[]{false, false};
+    final List<String> colorsList = Arrays.asList(opciones);
+
+    //-----------------------
+    //-----------------------
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -155,6 +174,8 @@ public class MainActivity extends AppCompatActivity
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+
+        builder = new AlertDialog.Builder(this);
     }
 
     @Override
@@ -181,10 +202,10 @@ public class MainActivity extends AppCompatActivity
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
+        //OPCIONES DE mostrar vista satelital Y mostrar zonas mapeadas en el mapa
         if (id == R.id.action_settings) {
 
-            obtenerPoligono(); //TODO cambiar icono
+            setDialogoOpciones();
 
             return true;
         }
@@ -275,7 +296,6 @@ public class MainActivity extends AppCompatActivity
             }
         });
 
-        map.setMapType(mMap.MAP_TYPE_SATELLITE);
 
         // Prompt the user for permission.
         getLocationPermission();
@@ -427,8 +447,6 @@ public class MainActivity extends AppCompatActivity
     }
 
     //obtiene las coordenadas de las esquinas de una zona y las printea en el mapa (para ZOOM=18) y 640x640
-    //TODO adaptarlo a los tamaños de 400x400
-    //TODO se queda siempre con el punt ocentral de la loc actual
     public void obtenerPoligono(){
 
         zonas = sqliteHelper.getAllElements();
@@ -475,4 +493,60 @@ public class MainActivity extends AppCompatActivity
 
         }
     }
+
+    public void setDialogoOpciones(){
+
+        builder.setMultiChoiceItems(opciones, checkedOpciones, new DialogInterface.OnMultiChoiceClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which, boolean isChecked) {
+
+                // Update the current focused item's checked status
+                checkedOpciones[which] = isChecked;
+
+                // Get the current focused item
+                String currentItem = colorsList.get(which);
+
+                // Notify the current action
+                Toast.makeText(getApplicationContext(),
+                        currentItem + " " + isChecked, Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        // Specify the dialog is not cancelable
+        builder.setCancelable(false);
+
+        // Set a title for alert dialog
+        builder.setTitle("Map options");
+
+        // Set the positive/yes button click listener
+        builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+               if (checkedOpciones[0] == true)
+                   mMap.setMapType(mMap.MAP_TYPE_SATELLITE);
+                if (checkedOpciones[0] == false)
+                    mMap.setMapType(mMap.MAP_TYPE_NORMAL);
+
+
+               if (checkedOpciones[1] == true)
+                   obtenerPoligono();
+                if (checkedOpciones[1] == false)
+                    mMap.clear();
+            }
+        });
+
+        // Set the negative/no button click listener
+        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                // Do something when click the negative button
+            }
+        });
+
+        AlertDialog dialog = builder.create();
+        // Display the alert dialog on interface
+        dialog.show();
+    }
+
+
 }

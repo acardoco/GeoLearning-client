@@ -25,7 +25,7 @@
         android:layout_marginEnd="16dp"
         android:layout_marginRight="16dp"
         android:layout_marginTop="306dp"
-        android:src="@drawable/save"
+        android:src="@drawable/osm_logo"
         app:layout_constraintBottom_toTopOf="@+id/list_edit_view"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />

@@ -2,7 +2,7 @@
     <string name="app_name">GeoLearning</string>
 
     <!-- Strings related to Settings -->
-    <string name="action_settings">Settings</string>
+    <string name="action_settings">Map settings</string>
     <string name="maps">Show my maps</string>
     <string name="mapping">Map now</string>
     <string name="title_activity_main">GeoLearning</string>

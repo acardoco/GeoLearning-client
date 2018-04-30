@@ -6,26 +6,21 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.RectF;
-import android.graphics.drawable.BitmapDrawable;
+import android.graphics.Rect;
 import android.os.AsyncTask;
-import android.support.design.widget.CollapsingToolbarLayout;
 import android.os.Bundle;
+import android.support.design.widget.CollapsingToolbarLayout;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.ImageView;
-import android.widget.ListView;
 import android.widget.TextView;
-
-import com.davemorrissey.labs.subscaleview.ImageSource;
-import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
 
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import acc.com.geolearning_app.db.SqliteHelper;
@@ -121,14 +116,31 @@ public class ItemDetailFragment extends Fragment {
                     .execute(url_lat_lon);*/
 
             Bitmap bmp= bitmap.copy(Bitmap.Config.ARGB_8888, true);
-            Canvas cnvs=new Canvas(bmp);
-            //img.setImageBitmap(bmp);
 
-            Paint paint=new Paint();
-            paint.setColor(Color.RED);
+            for (Place lugar: lugares){
 
-            cnvs.drawBitmap(bmp,0,0,null);
-            cnvs.drawRect(20, 20,50,50 , paint);
+                Canvas cnvs=new Canvas(bmp);
+
+                //dibujar rectangulo
+                Paint paint=new Paint();
+                paint.setColor(Color.BLACK);
+                paint.setStrokeWidth(0);
+                paint.setStyle(Paint.Style.STROKE);
+
+                int x = lugar.getX();
+                int y = lugar.getY();
+                int w = lugar.getW();
+                int h = lugar.getH();
+                cnvs.drawBitmap(bmp,0,0,null);
+                cnvs.drawRect(x,y,w+x,h + y , paint);
+
+                //añadir label
+                Paint paint2=new Paint();
+                paint2.setColor(Color.BLACK);
+                paint2.setTextSize(15);
+                cnvs.drawText(lugar.getPlace_type(),x,y,paint2);
+
+            }
 
             image.setImageBitmap(bmp);
 
