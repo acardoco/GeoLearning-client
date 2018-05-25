@@ -1,5 +1,7 @@
 package acc.com.geolearning_app.dto;
 
+import java.util.ArrayList;
+
 public class Place {
 
     private String id;
@@ -10,6 +12,8 @@ public class Place {
     private String place_type;
     private Double prob;
     private Zone id_map;
+    private ArrayList<Tag> tags = new ArrayList<>();
+    private ArrayList<Nodo> nodos = new ArrayList<>();
 
 
 
@@ -76,8 +80,6 @@ public class Place {
         this.place_type = place_type;
     }
 
-
-
     public Zone getId_map() {
         return this.id_map;
     }
@@ -86,5 +88,44 @@ public class Place {
         this.id_map = id_map;
     }
 
+    public Double getProb() {
+        return prob;
+    }
 
+    public void setProb(Double prob) {
+        this.prob = prob;
+    }
+
+    public ArrayList<Tag> getTags() {
+        return tags;
+    }
+
+    public void setTags(ArrayList<Tag> tags) {
+        this.tags = tags;
+    }
+
+    public void addTag(Tag tag){
+        this.tags.add(tag);
+    }
+
+    public void deleteTag(Tag tag){
+        this.tags.remove(tag);
+    }
+
+
+    public ArrayList<Nodo> getNodos() {
+        return nodos;
+    }
+
+    public void setNodos(ArrayList<Nodo> nodos) {
+        this.nodos = nodos;
+    }
+
+    public void addNodo(Nodo nodo){
+        this.nodos.add(nodo);
+    }
+
+    public void deleteNodo(Nodo nodo){
+        this.nodos.remove(nodo);
+    }
 }

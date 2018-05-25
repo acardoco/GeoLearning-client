@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import acc.com.geolearning_app.db.SqliteHelper;
+import acc.com.geolearning_app.dto.Nodo;
 import acc.com.geolearning_app.dto.Place;
 import acc.com.geolearning_app.dto.Zone;
 import acc.com.geolearning_app.util.utils;
@@ -44,11 +45,12 @@ public class EditZoneActivity extends AppCompatActivity {
         sqliteHelper = new SqliteHelper(this);
 
 
-        //guardar retoques
+        //TODO peticion a OSM server
         FloatingActionButton floatingActionButton = (FloatingActionButton) findViewById(R.id.imageButton_edit);
         floatingActionButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                utils.writeXMLToOSM(lugares,zone);
 
             }
         });
@@ -59,12 +61,17 @@ public class EditZoneActivity extends AppCompatActivity {
 
         //rellenar ListView
         lugares = sqliteHelper.getAllElements(zone.getId());
+        for (Place lugar: lugares){
+            ArrayList<Nodo> nodos = new ArrayList<>();
+            nodos = sqliteHelper.getAllNodos(lugar.getId());
+            lugar.setNodos(nodos);
+        }
         PlaceAdapter adapter = new PlaceAdapter(this,lugares,map,zone);
         final ListView lv= (ListView) findViewById(R.id.list_edit_view);
         lv.setAdapter(adapter);
 
         //dibujar poligonos de los lugares
-        utils.drawPolygons(map,lugares,zone);
+        utils.drawPolygons(map,lugares);
 
 
     }

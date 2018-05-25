@@ -10,6 +10,7 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 
+import acc.com.geolearning_app.dto.Nodo;
 import acc.com.geolearning_app.dto.Place;
 import acc.com.geolearning_app.dto.Tag;
 import acc.com.geolearning_app.dto.User;
@@ -27,6 +28,7 @@ public class SqliteHelper extends SQLiteOpenHelper{
     public static final String TABLE_MAP = "map"; //Equivalente a ZONE
     public static final String TABLE_PLACE ="place";
     public static final String TABLE_TAG = "tag";
+    public static final String TABLE_NODE = "node";
 
 
     //ATRIBUTOS user
@@ -35,6 +37,7 @@ public class SqliteHelper extends SQLiteOpenHelper{
     public static final String KEY_ID_MAP = "id_map";
     public static final String KEY_LAT = "lat";
     public static final String KEY_LON ="lon";
+    public static final String KEY_IS_MAPPED = "mapped";
 
     //ATRIBUTOS place
     public static final String KEY_ID_PLACE = "id_place";
@@ -42,6 +45,14 @@ public class SqliteHelper extends SQLiteOpenHelper{
     public static final String KEY_Y = "y";
     public static final String KEY_W = "w";
     public static final String KEY_H = "h";
+    public static final String KEY_LATXY = "latxy";
+    public static final String KEY_LONXY = "lonxy";
+    public static final String KEY_LATW = "latw";
+    public static final String KEY_LONW = "lonw";
+    public static final String KEY_LATH = "lath";
+    public static final String KEY_LONH = "lonh";
+    public static final String KEY_LATXW = "latxw";
+    public static final String KEY_LONYH = "lonyh";
     public static final String KEY_TYPE = "place_type";
     public static final String FOREIGN_KEY_MAP = "place_mapper";
 
@@ -51,12 +62,20 @@ public class SqliteHelper extends SQLiteOpenHelper{
     public static final String KEY_VALUE = "value";
     public static final String FOREIGN_KEY_PLACE = "id_place";
 
+    //ATRIBUTOS NODE
+    public static final String KEY_ID_NODE ="id_node";
+    public static final String KEY_LAT_NODE="lat";
+    public static final String KEY_LON_NODE="lon";
+    public static final String KEY_TYPE_NODE ="type";
+    //misma foreign key que tag
+
     //CREAR tabla de mapas
     public static final String SQL_TABLE_MAP = " CREATE TABLE " + TABLE_MAP
             + "( "
             + KEY_ID_MAP + " INTEGER PRIMARY KEY, "
             + KEY_LAT + " REAL, "
-            + KEY_LON + " REAL "
+            + KEY_LON + " REAL, "
+            + KEY_IS_MAPPED + " INTEGER " //no hay booleanos en SQLite
             + " ) ";
 
     //CREAR tabla de lugares
@@ -81,6 +100,16 @@ public class SqliteHelper extends SQLiteOpenHelper{
             + FOREIGN_KEY_PLACE + " INTEGER, "
             + " FOREIGN KEY(" + FOREIGN_KEY_PLACE + ") REFERENCES " +  TABLE_PLACE + "(" + KEY_ID_PLACE + ")"
             + " ) ";
+    //CREAR tabla de nodos
+    public static final String SQL_TABLE_NODE = " CREATE TABLE " + TABLE_NODE
+            + "( "
+            + KEY_ID_NODE + " INTEGER PRIMARY KEY, "
+            + KEY_LAT_NODE + " REAL, "
+            + KEY_LON_NODE + " REAL, "
+            + KEY_TYPE_NODE + " INTEGER, " // 0->x, 1->w, 2->h,3->x2
+            + FOREIGN_KEY_PLACE + " INTEGER, "
+            + " FOREIGN KEY(" + FOREIGN_KEY_PLACE + ") REFERENCES " +  TABLE_PLACE + "(" + KEY_ID_PLACE + ")"
+            + " ) ";
 
     public SqliteHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -89,22 +118,23 @@ public class SqliteHelper extends SQLiteOpenHelper{
     @Override
     public void onCreate(SQLiteDatabase sqLiteDatabase) {
         //Se crean las tablas
-        sqLiteDatabase.execSQL(SQL_TABLE_TAG);
         sqLiteDatabase.execSQL(SQL_TABLE_MAP);
         sqLiteDatabase.execSQL(SQL_TABLE_PLACE);
-
+        sqLiteDatabase.execSQL(SQL_TABLE_NODE);
+        sqLiteDatabase.execSQL(SQL_TABLE_TAG);
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase sqLiteDatabase, int i, int i1) {
         //drop table to create new one if database version updated
+        sqLiteDatabase.execSQL(" DROP TABLE IF EXISTS " + TABLE_NODE);
         sqLiteDatabase.execSQL(" DROP TABLE IF EXISTS " + TABLE_TAG);
         sqLiteDatabase.execSQL(" DROP TABLE IF EXISTS " + TABLE_PLACE);
         sqLiteDatabase.execSQL(" DROP TABLE IF EXISTS " + TABLE_MAP);
     }
 
     //AÑADIR mapa
-    public long addZone(Zone zone){
+    public long addZone(Zone zone, boolean is_mapped){
 
         //get writable database
         SQLiteDatabase db = this.getWritableDatabase();
@@ -114,6 +144,11 @@ public class SqliteHelper extends SQLiteOpenHelper{
 
         values.put(KEY_LAT, zone.getLat());
         values.put(KEY_LON, zone.getLon());
+
+        if (is_mapped)
+            values.put(KEY_IS_MAPPED,1);
+        else
+            values.put(KEY_IS_MAPPED,0);
 
 
         return  db.insert(TABLE_MAP, null, values);
@@ -156,6 +191,23 @@ public class SqliteHelper extends SQLiteOpenHelper{
 
     }
 
+    public long addNode(Nodo node){
+
+        //get writable database
+        SQLiteDatabase db = this.getWritableDatabase();
+
+        //create content values to insert
+        ContentValues values = new ContentValues();
+
+        values.put(KEY_LAT_NODE,node.getLat());
+        values.put(KEY_LON_NODE,node.getLon());
+        values.put(KEY_TYPE_NODE,node.getType()); // 0->x, 1->w, 2->h,3->x2
+        values.put(FOREIGN_KEY_PLACE,node.getId_place().getId());
+
+        return db.insert(TABLE_NODE, null, values);
+
+    }
+
     // obtener todas las zonas/mapas
     public ArrayList<Zone> getAllElements() {
 
@@ -174,6 +226,11 @@ public class SqliteHelper extends SQLiteOpenHelper{
                         obj.setId(cursor.getString(0));
                         obj.setLat(cursor.getDouble(1));
                         obj.setLon(cursor.getDouble(2));
+                        int mapped = cursor.getInt(3);
+                        if (mapped==1)
+                            obj.setMapped(true);
+                        else
+                            obj.setMapped(false);
                         list.add(obj);
 
                     } while (cursor.moveToNext());
@@ -214,6 +271,7 @@ public class SqliteHelper extends SQLiteOpenHelper{
                         obj.setW(cursor.getInt(3));
                         obj.setH(cursor.getInt(4));
                         obj.setPlace_type(cursor.getString(5));
+                        obj.setTags(getAllTags(obj.getId()));
                         list.add(obj);
 
                     } while (cursor.moveToNext());
@@ -224,6 +282,8 @@ public class SqliteHelper extends SQLiteOpenHelper{
         } finally {
             try { db.close(); } catch (Exception ignore) {}
         }
+
+
         return list;
     }
 
@@ -265,6 +325,44 @@ public class SqliteHelper extends SQLiteOpenHelper{
         return list;
     }
 
+    // obtener nodos de un lugar
+    public ArrayList<Nodo> getAllNodos(String id) {
+
+        ArrayList<Nodo> list = new ArrayList<Nodo>();
+        // Select All Query
+        String selectQuery = "SELECT DISTINCT  N.id_node, N.lat, N.lon, N.type FROM "
+                + TABLE_NODE
+                + " N JOIN "
+                + TABLE_PLACE
+                + " P ON N.id_place=P.id_place WHERE N."
+                + FOREIGN_KEY_PLACE + " = " + id;
+
+        SQLiteDatabase db = this.getReadableDatabase();
+        try {
+            Cursor cursor = db.rawQuery(selectQuery, null);
+            try {
+                // looping through all rows and adding to list
+                if (cursor.moveToFirst()) {
+                    do {
+
+                        Nodo obj = new Nodo();
+                        obj.setId(cursor.getString(0));
+                        obj.setLat(cursor.getDouble(1));
+                        obj.setLon(cursor.getDouble(2));
+                        obj.setType(cursor.getInt(3));
+                        list.add(obj);
+
+                    } while (cursor.moveToNext());
+                }
+            } finally {
+                try { cursor.close(); } catch (Exception ignore) {}
+            }
+        } finally {
+            try { db.close(); } catch (Exception ignore) {}
+        }
+        return list;
+    }
+
     public Zone getZona(String id){
 
         Zone obj = new Zone();
@@ -279,7 +377,11 @@ public class SqliteHelper extends SQLiteOpenHelper{
             obj.setId(cursor.getString(0));
             obj.setLat(cursor.getDouble(1));
             obj.setLon(cursor.getDouble(2));
-
+            int mapped = cursor.getInt(3);
+            if (mapped==1)
+                obj.setMapped(true);
+            else
+                obj.setMapped(false);
 
         }
 
@@ -304,6 +406,32 @@ public class SqliteHelper extends SQLiteOpenHelper{
 
         return db.delete(TABLE_TAG,KEY_ID_TAG + "=" + id,null) > 0;
 
+    }
+
+    public boolean deleteNodosLugar(String id){
+        SQLiteDatabase db = this.getReadableDatabase();
+
+        return db.delete(TABLE_NODE,FOREIGN_KEY_PLACE + "=" + id,null) > 0;
+    }
+
+    public void updateZoneToMapped(String id){
+
+        String selectQuery = "UPDATE " + TABLE_MAP + " SET " + KEY_IS_MAPPED + "=1 WHERE " + KEY_ID_MAP + "=" + id;
+        SQLiteDatabase db = this.getReadableDatabase();
+
+        db.execSQL(selectQuery);
+
+    }
+
+    public void updateNodo(Nodo nodo){
+        String selectQuery = "UPDATE " + TABLE_NODE + " SET "
+                + KEY_LAT_NODE + "=" + nodo.getLat()
+                + ","
+                + KEY_LON_NODE + "=" + nodo.getLon()
+                + " WHERE " + KEY_ID_NODE + "=" + nodo.getId();
+        SQLiteDatabase db = this.getReadableDatabase();
+
+        db.execSQL(selectQuery);
     }
 
 

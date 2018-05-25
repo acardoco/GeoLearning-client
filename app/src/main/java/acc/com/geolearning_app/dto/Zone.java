@@ -10,6 +10,7 @@ public class Zone {
     private String id;
     private Double lat;
     private Double lon;
+    private Boolean mapped;
     private ArrayList<Place> places = new ArrayList<>();
     //-- CONTENT ++
     public static final List<Zone> ZONES = new ArrayList<Zone>();
@@ -111,5 +112,13 @@ public class Zone {
 
     public void deletePlace(Place place){
         this.places.remove(place);
+    }
+
+    public Boolean getMapped() {
+        return mapped;
+    }
+
+    public void setMapped(Boolean mapped) {
+        this.mapped = mapped;
     }
 }

@@ -7,15 +7,19 @@
         <item
             android:id="@+id/actual_map"
             android:icon="@drawable/map"
-            android:title="Mapear zona actual" />
+            android:title="Map actual zone" />
         <item
-            android:id="@+id/search_map"
+            android:id="@+id/add_map_query"
+            android:icon="@android:drawable/gallery_thumb"
+            android:title="Add location to the query" />
+        <item
+            android:id="@+id/map_query"
             android:icon="@drawable/globe"
-            android:title="Buscar zona para mapear" />
+            android:title="Map query locations" />
         <item
             android:id="@+id/show_maps"
             android:icon="@drawable/zonas"
-            android:title="Ver mapas" />
+            android:title="Show zones" />
     </group>
 
 </menu>

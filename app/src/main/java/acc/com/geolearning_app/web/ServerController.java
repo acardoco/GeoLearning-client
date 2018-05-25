@@ -3,7 +3,6 @@ package acc.com.geolearning_app.web;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.support.design.widget.Snackbar;
@@ -15,13 +14,11 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -31,6 +28,7 @@ import java.util.ArrayList;
 
 import acc.com.geolearning_app.R;
 import acc.com.geolearning_app.db.SqliteHelper;
+import acc.com.geolearning_app.dto.Nodo;
 import acc.com.geolearning_app.dto.Place;
 import acc.com.geolearning_app.dto.Zone;
 import acc.com.geolearning_app.util.Server_Status;
@@ -47,15 +45,14 @@ public class ServerController extends AppCompatActivity {
     private Context context;
     private DrawerLayout drawerLayout;
 
-
-    String urlbase = "https://maps.googleapis.com/maps/api/staticmap?center=";
-    String urlcomun = "&zoom=18&format=jpg&size=400x400&maptype=satellite&key=";
-    String urlkey= "AIzaSyB9qW-QzzGtT2xEsJlsuLgA5TOYNJS8ogo";
-    String destinationFile = "image.jpg";
+    private String SERVER_URL_MAP = "http://192.168.0.159:5000/predict";//192.168.0.159
+    private String SERVER_URL_MAP_LIST = "http://192.168.0.159:5000/predict_query";
 
     SqliteHelper sqliteHelper;
 
     Server_Status server_status = Server_Status.getInstance();
+
+    ArrayList<Zone> lugares = new ArrayList<Zone>();
 
 
     protected ServerController(Context context, SqliteHelper sqliteHelper, DrawerLayout drawerLayout) {
@@ -76,13 +73,11 @@ public class ServerController extends AppCompatActivity {
 
         AsyncTask myTask = new GetUrlJsonTask();
 
-        String url_local = "http://192.168.0.159:5000/predict"; //192.168.0.159
-
         LAT = lat;
         LON = lon;
 
         //valores de input
-        Object[] arg = new String[]{url_local,String.valueOf(LAT),String.valueOf(LON)};
+        Object[] arg = new String[]{SERVER_URL_MAP,String.valueOf(LAT),String.valueOf(LON)};
 
 
         myTask.execute(arg);
@@ -90,17 +85,18 @@ public class ServerController extends AppCompatActivity {
 
     }
 
-    //Hace una peticion directamente a la API de Google Maps y obtiene una imagen que guarda en el dispositivo
-    public void getImage(double lat, double lon){
+    //Para enviar y procesas varias zonas a la vez
+    //TODO implementarlo
+    public void getListCandidates(ArrayList<Zone> zonas){
 
-        AsyncTask mMyTask = new GetUrlImageTask();
+        AsyncTask myTask = new GetListJsonTask(zonas);
 
-        String string_final = utils.getStringUrl(lat,lon);
-        URL url_final =  stringToURL(string_final);
+        lugares = zonas;
 
-        Object[] arg = new URL[]{url_final,null,null};
+        Object[] arg = new String[]{null};
 
-        mMyTask.execute(arg);
+        myTask.execute(arg);
+
     }
     /**************************************************/
     /**************************************************/
@@ -113,94 +109,6 @@ public class ServerController extends AppCompatActivity {
     /**************************************************/
     /**************************************************/
     //TODO AsyncTask <Input, Variables a meter en OnProgressUpdate, tipo del resultado>
-
-    //clase para ejecutar en segundo plano la peticion
-    private class GetUrlImageTask extends AsyncTask<URL,Void,Bitmap> {
-        // Before the tasks execution
-        protected void onPreExecute(){
-            // Display the progress dialog on async task start
-            //mProgressDialog.show();
-        }
-
-        // Do the task in background/non UI thread
-        protected Bitmap doInBackground(URL...urls){
-
-            if(android.os.Debug.isDebuggerConnected())
-                android.os.Debug.waitForDebugger();
-
-            URL url = urls[0];
-            HttpURLConnection connection = null;
-
-            try{
-                // Initialize a new http url connection
-                connection = (HttpURLConnection) url.openConnection();
-
-                // Connect the http url connection
-                connection.connect();
-
-                // Get the input stream from http url connection
-                InputStream inputStream = connection.getInputStream();
-
-                /*
-                    BufferedInputStream
-                        A BufferedInputStream adds functionality to another input stream-namely,
-                        the ability to buffer the input and to support the mark and reset methods.
-                */
-                /*
-                    BufferedInputStream(InputStream in)
-                        Creates a BufferedInputStream and saves its argument,
-                        the input stream in, for later use.
-                */
-                // Initialize a new BufferedInputStream from InputStream
-                BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream);
-
-                /*
-                    decodeStream
-                        Bitmap decodeStream (InputStream is)
-                            Decode an input stream into a bitmap. If the input stream is null, or
-                            cannot be used to decode a bitmap, the function returns null. The stream's
-                            position will be where ever it was after the encoded data was read.
-
-                        Parameters
-                            is InputStream : The input stream that holds the raw data
-                                              to be decoded into a bitmap.
-                        Returns
-                            Bitmap : The decoded bitmap, or null if the image data could not be decoded.
-                */
-                // Convert BufferedInputStream to Bitmap object
-                Bitmap bmp = BitmapFactory.decodeStream(bufferedInputStream);
-
-                // Return the downloaded bitmap
-                return bmp;
-
-            }catch(IOException e){
-                e.printStackTrace();
-            }finally{
-                // Disconnect the http url connection
-                connection.disconnect();
-            }
-            return null;
-        }
-
-        // When all async task done
-        protected void onPostExecute(Bitmap result){
-            // Hide the progress dialog
-            //mProgressDialog.dismiss();
-
-            if(result!=null){
-                // Display the downloaded image into ImageView
-                //mImageView.setImageBitmap(result);
-
-                // Save bitmap to internal storage
-                Uri imageInternalUri = saveImageToInternalStorage(result);
-                // Set the ImageView image from internal storage
-                //mImageViewInternal.setImageURI(imageInternalUri);
-            }else {
-                // Notify user that an error occurred while downloading image
-                //Snackbar.make(mCLayout,"Error",Snackbar.LENGTH_LONG).show();
-            }
-        }
-    }
 
     //TODO se pasa un json con lat y lon y se obtiene un hasmap con los candidatos
     private class GetUrlJsonTask extends AsyncTask<String,Void,String>{
@@ -297,17 +205,31 @@ public class ServerController extends AppCompatActivity {
                         int h = Integer.parseInt(jsonArray.getJSONObject(i).getString("h"));
                         double prob = Double.parseDouble(jsonArray.getJSONObject(i).getString("prob"));
                         Place place = new Place(x, y, w, h, label, zone, prob);
+                        //nodos de un lugar/place
+                        Nodo nodox = new Nodo();Nodo nodox2 = new Nodo();Nodo nodow = new Nodo();Nodo nodoh = new Nodo();
+                        nodox.setLat(utils.getLat(zone.getLat(), y));nodox.setLon(utils.getLon(zone.getLon(), x));
+                        nodow.setLat(utils.getLat(zone.getLat(), y));nodow.setLon(utils.getLon(zone.getLon(), x + w));
+                        nodoh.setLat(utils.getLat(zone.getLat(), y + h));nodoh.setLon(utils.getLon(zone.getLon(),x));
+                        nodox2.setLat(utils.getLat(zone.getLat(), y + h));nodox2.setLon(utils.getLon(zone.getLon(), x + w));
+                        place.addNodo(nodox);place.addNodo(nodow);place.addNodo(nodoh);place.addNodo(nodox2);
+                        //añadir los nodos al lugar/place
                         puntos.add(place);
                     }
                     zone.setPlaces(puntos);
 
                     //SQLITE
-                    long id_zone = sqliteHelper.addZone(zone);
+                    long id_zone = sqliteHelper.addZone(zone,true);
                     zone.setId(Long.toString(id_zone));
                     for (int i = 0; i < puntos.size(); i++) {
                         Place place = puntos.get(i);
                         place.setId_map(zone);
-                        sqliteHelper.addPlace(puntos.get(i));
+                        long id_place = sqliteHelper.addPlace(puntos.get(i));
+                        place.setId(String.valueOf(id_place));
+                        ArrayList<Nodo> nodos = puntos.get(i).getNodos();
+                        for (Nodo nodo: nodos){
+                            nodo.setId_place(place);
+                            sqliteHelper.addNode(nodo);
+                        }
                     }
 
                 }
@@ -319,6 +241,144 @@ public class ServerController extends AppCompatActivity {
 
         }
 
+    }
+
+    private class GetListJsonTask extends  AsyncTask<String,Void, String>{
+
+        ArrayList<Zone> zonas = new ArrayList<>();
+
+        GetListJsonTask(ArrayList<Zone> lugares){
+            this.zonas = lugares;
+        }
+
+        @Override
+        protected String doInBackground(String... values) {
+
+            if(android.os.Debug.isDebuggerConnected())
+                android.os.Debug.waitForDebugger();
+
+            URL url = stringToURL(SERVER_URL_MAP_LIST);
+            HttpURLConnection connection = null;
+
+            try{
+
+                connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("POST");
+                connection.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
+                connection.setRequestProperty("Accept","application/json");
+                connection.setDoOutput(true); //para peticiones POST
+                connection.connect();
+
+                String json = "";
+
+                // Build jsonObject
+
+                JSONArray list = new JSONArray();//TODO rematarlo
+                for (Zone zona: zonas){
+                    JSONObject jsonObject = new JSONObject();
+                    jsonObject.accumulate("id",zona.getId());
+                    jsonObject.accumulate("lat", zona.getLat().toString());
+                    jsonObject.accumulate("lon", zona.getLon().toString());
+                    list.put(jsonObject);
+                }
+
+                JSONObject mainObject = new JSONObject();
+                mainObject.put("coordenadas",list);
+
+                Log.i("JSON", mainObject.toString());
+                DataOutputStream outputStream = new DataOutputStream(connection.getOutputStream());
+                //os.writeBytes(URLEncoder.encode(jsonParam.toString(), "UTF-8"));
+                outputStream.writeBytes(mainObject.toString());
+
+                outputStream.flush();
+                outputStream.close();
+
+                Log.i("STATUS", String.valueOf(connection.getResponseCode()));
+                Log.i("MSG" , connection.getResponseMessage());
+
+                //leer respuesta
+                BufferedReader in = new BufferedReader(
+                        new InputStreamReader(connection.getInputStream()));
+                String inputLine;
+                StringBuffer response = new StringBuffer();
+                while ((inputLine = in.readLine()) != null) {
+                    response.append(inputLine);
+                }
+                in.close();
+
+                //cerrar conexion
+                connection.disconnect();
+
+                return response.toString();
+
+
+            }catch(IOException e){
+                e.printStackTrace();
+            } catch (JSONException e) {
+                e.printStackTrace();
+            } finally{
+                // Disconnect the http url connection
+                connection.disconnect();
+            }
+            return null;
+        }
+        @Override
+        protected void onPostExecute(String s) {
+            super.onPostExecute(s);
+            //progressDialog.dismiss();
+            try {
+
+                server_status.setBUSY_SERVER(false);
+
+                Snackbar.make(drawerLayout, R.string.server_done,
+                        Snackbar.LENGTH_LONG)
+                        .show();
+
+                if (s!=null) {
+                    JSONObject jsonObject = new JSONObject(s);
+
+                    JSONArray jsonArray = jsonObject.getJSONArray("candidatos");
+
+                    for (int i = 0; i < jsonArray.length(); i++) {
+                        for (int j = 0; j < lugares.size(); j++ ){
+                            String id_zone = jsonArray.getJSONObject(i).getString("id");
+                            if (id_zone.equals(lugares.get(j).getId())){
+                                Zone zone = lugares.get(j);
+                                zone.setMapped(true);
+                                sqliteHelper.updateZoneToMapped(lugares.get(j).getId());
+
+                                String label = jsonArray.getJSONObject(i).getString("label");
+                                int x = Integer.parseInt(jsonArray.getJSONObject(i).getString("x"));
+                                int y = Integer.parseInt(jsonArray.getJSONObject(i).getString("y"));
+                                int w = Integer.parseInt(jsonArray.getJSONObject(i).getString("w"));
+                                int h = Integer.parseInt(jsonArray.getJSONObject(i).getString("h"));
+                                double prob = Double.parseDouble(jsonArray.getJSONObject(i).getString("prob"));
+                                Place place = new Place(x, y, w, h, label, zone, prob);
+                                place.setId_map(zone);
+                                long id_place = sqliteHelper.addPlace(place);
+                                place.setId(String.valueOf(id_place));
+                                //nodos
+                                Nodo nodox = new Nodo();Nodo nodox2 = new Nodo();Nodo nodow = new Nodo();Nodo nodoh = new Nodo();
+                                nodox.setLat(utils.getLat(zone.getLat(), y));nodox.setLon(utils.getLon(zone.getLon(), x));
+                                nodox.setId_place(place);nodox.setType(0);// 0->x, 1->w, 2->h,3->x2
+                                nodow.setLat(utils.getLat(zone.getLat(), y));nodow.setLon(utils.getLon(zone.getLon(), x + w));
+                                nodow.setId_place(place);nodow.setType(1);
+                                nodoh.setLat(utils.getLat(zone.getLat(), y + h));nodoh.setLon(utils.getLon(zone.getLon(),x));
+                                nodoh.setId_place(place);nodoh.setType(2);
+                                nodox2.setLat(utils.getLat(zone.getLat(), y + h));nodox2.setLon(utils.getLon(zone.getLon(), x + w));
+                                nodox2.setId_place(place);nodox2.setType(3);
+                                sqliteHelper.addNode(nodox);sqliteHelper.addNode(nodow);sqliteHelper.addNode(nodox2);sqliteHelper.addNode(nodoh);
+                            }
+                        }
+                    }
+                }
+
+
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+
+        }
     }
 
 

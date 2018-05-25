@@ -22,4 +22,5 @@ public class Server_Status {
     public void setBUSY_SERVER(boolean BUSY_SERVER) {
         this.BUSY_SERVER = BUSY_SERVER;
     }
+
 }

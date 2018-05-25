@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Point;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -220,13 +221,22 @@ public class MainActivity extends AppCompatActivity
         int id = item.getItemId();
 
         if (id == R.id.actual_map) {
-
+            //MAPEA la zona actual
             mappingActualPosition(mLastKnownLocation.getLatitude(), mLastKnownLocation.getLongitude());
 
-        } else if (id == R.id.search_map) {
-            //buscar otra zona a mapear
+        } else if (id == R.id.add_map_query) {
+            //AÑADE una localización en la cola de pendientes
+            addLocationToQuery();
 
-        } else if (id == R.id.show_maps) {
+            return true;
+
+        } else if (id==R.id.map_query){
+            //MAPEA zonas pendientes
+            mapQuery();
+
+            return true;
+
+        }else if (id == R.id.show_maps) {
             //Hacia Lista de zonas/mapas
             Intent intent=new Intent(MainActivity.this,ItemListActivity.class);
             startActivity(intent);
@@ -253,7 +263,7 @@ public class MainActivity extends AppCompatActivity
         mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
             @Override
             public void onMapClick(LatLng point) {
-                // TODO Auto-generated method stub
+
                 mMap.clear();
 
                 mLastKnownLocation.setLatitude(point.latitude);
@@ -491,9 +501,11 @@ public class MainActivity extends AppCompatActivity
 
             Polygon polygon = mMap.addPolygon(rectOptions);
 
+
         }
     }
 
+    //opciones de mostrar zonas y vista satelital
     public void setDialogoOpciones(){
 
         builder.setMultiChoiceItems(opciones, checkedOpciones, new DialogInterface.OnMultiChoiceClickListener() {
@@ -546,6 +558,70 @@ public class MainActivity extends AppCompatActivity
         AlertDialog dialog = builder.create();
         // Display the alert dialog on interface
         dialog.show();
+    }
+
+    //añade una localización sin mapear(sin lugares mapeados) a la query
+    public void addLocationToQuery(){
+        Zone zone = new Zone();
+        zone.setLat(mLastKnownLocation.getLatitude());
+        zone.setLon(mLastKnownLocation.getLongitude());
+        long id_zone = sqliteHelper.addZone(zone,false);
+        zone.setMapped(false);
+        zone.setId(String.valueOf(id_zone));
+
+        zonas.add(zone);
+
+        Toast.makeText(this,"Added zone with lat: "
+                        + utils.truncateDecimal(zone.getLat(),4)
+                        + " and lon : " + utils.truncateDecimal(zone.getLon(),4)
+                , Toast.LENGTH_SHORT);
+
+        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        drawer.closeDrawer(GravityCompat.START);
+
+
+        Snackbar.make(drawer, "Added zone with lat: "
+                        + utils.truncateDecimal(zone.getLat(),4)
+                        + " and lon : " + utils.truncateDecimal(zone.getLon(),4),
+                Snackbar.LENGTH_SHORT)
+                .show();
+    }
+
+    //mapea zonas pendientes en cola
+    public void mapQuery(){
+
+        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+
+        ArrayList<Zone> lugares_no_mapeados = new ArrayList<Zone>();
+        for (Zone zone: zonas){
+            if (!zone.getMapped())
+                lugares_no_mapeados.add(zone);
+        }
+
+        if (lugares_no_mapeados.size()> 0 ) {
+
+            Snackbar.make(drawer, R.string.server_working,
+                    Snackbar.LENGTH_INDEFINITE)
+                    .show();
+
+            server_status.setBUSY_SERVER(true);
+
+            ServerController serverController = ServerController.getInstance(this, this.sqliteHelper, drawer);
+            serverController.getListCandidates(lugares_no_mapeados);
+
+            for (Zone zone : zonas) {
+                zone.setMapped(true);
+            }
+        }else{
+
+            Snackbar.make(drawer, "Empty query.",
+                    Snackbar.LENGTH_SHORT)
+                    .show();
+
+        }
+
+        drawer.closeDrawer(GravityCompat.START);
+
     }
 
 
