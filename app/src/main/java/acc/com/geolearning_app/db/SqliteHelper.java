@@ -22,7 +22,7 @@ public class SqliteHelper extends SQLiteOpenHelper{
     public static final String DATABASE_NAME = "geolearning";
 
     //DATABASE VERSION
-    public static final int DATABASE_VERSION = 1;
+    public static final int DATABASE_VERSION = 2;
 
     //TABLAS
     public static final String TABLE_MAP = "map"; //Equivalente a ZONE
@@ -45,15 +45,10 @@ public class SqliteHelper extends SQLiteOpenHelper{
     public static final String KEY_Y = "y";
     public static final String KEY_W = "w";
     public static final String KEY_H = "h";
-    public static final String KEY_LATXY = "latxy";
-    public static final String KEY_LONXY = "lonxy";
-    public static final String KEY_LATW = "latw";
-    public static final String KEY_LONW = "lonw";
-    public static final String KEY_LATH = "lath";
-    public static final String KEY_LONH = "lonh";
-    public static final String KEY_LATXW = "latxw";
-    public static final String KEY_LONYH = "lonyh";
     public static final String KEY_TYPE = "place_type";
+    public static final String KEY_A_CENTRO = "a_centro";
+    public static final String KEY_B_CENTRO = "b_centro";
+    public static final String KEY_RADIO = "radio";
     public static final String FOREIGN_KEY_MAP = "place_mapper";
 
     //ATRIBUTOS tag
@@ -87,6 +82,9 @@ public class SqliteHelper extends SQLiteOpenHelper{
             + KEY_W + " INTEGER, "
             + KEY_H + " INTEGER, "
             + KEY_TYPE + " TEXT, "
+            + KEY_A_CENTRO + " INTEGER,"
+            + KEY_B_CENTRO + " INTEGER,"
+            + KEY_RADIO + " INTEGER,"
             + FOREIGN_KEY_MAP + " INTEGER, "
             + " FOREIGN KEY(" + FOREIGN_KEY_MAP + ") REFERENCES " +  TABLE_MAP + "(" + KEY_ID_MAP + ")"
             + " ) ";
@@ -155,7 +153,7 @@ public class SqliteHelper extends SQLiteOpenHelper{
 
     }
 
-    //AÑADIR zona
+    //AÑADIR lugar
     public long addPlace(Place place){
 
         //get writable database
@@ -169,12 +167,16 @@ public class SqliteHelper extends SQLiteOpenHelper{
         values.put(KEY_W, place.getW());
         values.put(KEY_H, place.getH());
         values.put(KEY_TYPE, place.getPlace_type());
+        values.put(KEY_A_CENTRO, place.getA_centro());
+        values.put(KEY_B_CENTRO, place.getB_centro());
+        values.put(KEY_RADIO, place.getRadio());
         values.put(FOREIGN_KEY_MAP, place.getId_map().getId());
 
         return db.insert(TABLE_PLACE, null, values);
 
     }
 
+    //añadir un tag
     public long addTag(Tag tag){
 
         //get writable database
@@ -250,7 +252,7 @@ public class SqliteHelper extends SQLiteOpenHelper{
     public ArrayList<Place> getAllElements(String id) {
         ArrayList<Place> list = new ArrayList<Place>();
         // Select All Query
-        String selectQuery = "SELECT DISTINCT  P.id_place, P.x, P.y, P.w, P.h, P.place_type FROM "
+        String selectQuery = "SELECT DISTINCT  P.id_place, P.x, P.y, P.w, P.h, P.a_centro, P.b_centro, P.radio, P.place_type  FROM "
                 + TABLE_PLACE
                 + " P JOIN "
                 + TABLE_MAP
@@ -270,7 +272,10 @@ public class SqliteHelper extends SQLiteOpenHelper{
                         obj.setY(cursor.getInt(2));
                         obj.setW(cursor.getInt(3));
                         obj.setH(cursor.getInt(4));
-                        obj.setPlace_type(cursor.getString(5));
+                        obj.setA_centro(cursor.getInt(5));
+                        obj.setB_centro(cursor.getInt(6));
+                        obj.setRadio(cursor.getInt(7));
+                        obj.setPlace_type(cursor.getString(8));
                         obj.setTags(getAllTags(obj.getId()));
                         list.add(obj);
 

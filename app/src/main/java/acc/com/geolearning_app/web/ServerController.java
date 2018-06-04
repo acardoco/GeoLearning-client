@@ -86,7 +86,6 @@ public class ServerController extends AppCompatActivity {
     }
 
     //Para enviar y procesas varias zonas a la vez
-    //TODO implementarlo
     public void getListCandidates(ArrayList<Zone> zonas){
 
         AsyncTask myTask = new GetListJsonTask(zonas);
@@ -196,7 +195,7 @@ public class ServerController extends AppCompatActivity {
                     Zone zone = new Zone();
                     zone.setLat(LAT);
                     zone.setLon(LON);
-                    ArrayList<Place> puntos = new ArrayList<Place>();
+                    ArrayList<Place> places = new ArrayList<Place>();
                     for (int i = 0; i < jsonArray.length(); i++) {
                         String label = jsonArray.getJSONObject(i).getString("label");
                         int x = Integer.parseInt(jsonArray.getJSONObject(i).getString("x"));
@@ -205,27 +204,76 @@ public class ServerController extends AppCompatActivity {
                         int h = Integer.parseInt(jsonArray.getJSONObject(i).getString("h"));
                         double prob = Double.parseDouble(jsonArray.getJSONObject(i).getString("prob"));
                         Place place = new Place(x, y, w, h, label, zone, prob);
-                        //nodos de un lugar/place
-                        Nodo nodox = new Nodo();Nodo nodox2 = new Nodo();Nodo nodow = new Nodo();Nodo nodoh = new Nodo();
-                        nodox.setLat(utils.getLat(zone.getLat(), y));nodox.setLon(utils.getLon(zone.getLon(), x));
-                        nodow.setLat(utils.getLat(zone.getLat(), y));nodow.setLon(utils.getLon(zone.getLon(), x + w));
-                        nodoh.setLat(utils.getLat(zone.getLat(), y + h));nodoh.setLon(utils.getLon(zone.getLon(),x));
-                        nodox2.setLat(utils.getLat(zone.getLat(), y + h));nodox2.setLon(utils.getLon(zone.getLon(), x + w));
-                        place.addNodo(nodox);place.addNodo(nodow);place.addNodo(nodoh);place.addNodo(nodox2);
-                        //añadir los nodos al lugar/place
-                        puntos.add(place);
+                        //distincion para dibujar un "circulo" o rectangulos
+                        if (label.equals("rotonda")){
+
+                            int radioi =  Integer.parseInt(jsonArray.getJSONObject(i).getString("r"));
+                            int ai =  Integer.parseInt(jsonArray.getJSONObject(i).getString("a"));
+                            int bi =Integer.parseInt(jsonArray.getJSONObject(i).getString("b"));
+
+                            //añadimos a place
+                            place.setA_centro(ai);
+                            place.setB_centro(bi);
+                            place.setRadio(radioi);
+
+                            //cast
+                            double a = (double)ai;
+                            double b = (double)bi;
+                            double radio = (double)radioi;
+
+                            double angulo = 0;
+
+                            //se meten los nodos
+                            for (int p = 1; p <= 16; p++){
+
+                               Nodo nodo = new Nodo();
+                               double a_centro = a + radio * Math.cos(angulo);
+                               double b_centro = b + radio * Math.sin(angulo);
+                               double lon = utils.getLon(zone.getLon(),a_centro);
+                               double lat = utils.getLat(zone.getLat(),b_centro);
+                               nodo.setLat(lat);
+                               nodo.setLon(lon);
+                               nodo.setType(p);
+                               place.addNodo(nodo);
+
+                               angulo+=(22.5 * Math.PI) / 180;//360/16 y en radianes
+                            }
+                            //añadir los nodos al lugar/place
+                            places.add(place);
+
+                        }else {
+                            //nodos de un lugar/place
+                            Nodo nodox = new Nodo();nodox.setType(0);// 0->x, 1->w, 2->h,3->x2
+                            Nodo nodox2 = new Nodo();nodox2.setType(3);
+                            Nodo nodow = new Nodo();nodow.setType(1);
+                            Nodo nodoh = new Nodo();nodoh.setType(2);
+                            nodox.setLat(utils.getLat(zone.getLat(), y));
+                            nodox.setLon(utils.getLon(zone.getLon(), x));
+                            nodow.setLat(utils.getLat(zone.getLat(), y));
+                            nodow.setLon(utils.getLon(zone.getLon(), x + w));
+                            nodoh.setLat(utils.getLat(zone.getLat(), y + h));
+                            nodoh.setLon(utils.getLon(zone.getLon(), x));
+                            nodox2.setLat(utils.getLat(zone.getLat(), y + h));
+                            nodox2.setLon(utils.getLon(zone.getLon(), x + w));
+                            place.addNodo(nodox);
+                            place.addNodo(nodow);
+                            place.addNodo(nodoh);
+                            place.addNodo(nodox2);
+                            //añadir los nodos al lugar/place
+                            places.add(place);
+                        }
                     }
-                    zone.setPlaces(puntos);
+                    zone.setPlaces(places);
 
                     //SQLITE
                     long id_zone = sqliteHelper.addZone(zone,true);
                     zone.setId(Long.toString(id_zone));
-                    for (int i = 0; i < puntos.size(); i++) {
-                        Place place = puntos.get(i);
+                    for (int i = 0; i < places.size(); i++) {
+                        Place place = places.get(i);
                         place.setId_map(zone);
-                        long id_place = sqliteHelper.addPlace(puntos.get(i));
+                        long id_place = sqliteHelper.addPlace(places.get(i));
                         place.setId(String.valueOf(id_place));
-                        ArrayList<Nodo> nodos = puntos.get(i).getNodos();
+                        ArrayList<Nodo> nodos = places.get(i).getNodos();
                         for (Nodo nodo: nodos){
                             nodo.setId_place(place);
                             sqliteHelper.addNode(nodo);
@@ -273,7 +321,7 @@ public class ServerController extends AppCompatActivity {
 
                 // Build jsonObject
 
-                JSONArray list = new JSONArray();//TODO rematarlo
+                JSONArray list = new JSONArray();
                 for (Zone zona: zonas){
                     JSONObject jsonObject = new JSONObject();
                     jsonObject.accumulate("id",zona.getId());
@@ -355,19 +403,60 @@ public class ServerController extends AppCompatActivity {
                                 double prob = Double.parseDouble(jsonArray.getJSONObject(i).getString("prob"));
                                 Place place = new Place(x, y, w, h, label, zone, prob);
                                 place.setId_map(zone);
+
+                                //circunferencia
+                                int radioi =  Integer.parseInt(jsonArray.getJSONObject(i).getString("r"));
+                                int ai =  Integer.parseInt(jsonArray.getJSONObject(i).getString("a"));
+                                int bi =Integer.parseInt(jsonArray.getJSONObject(i).getString("b"));
+                                //añadimos a place
+                                place.setA_centro(ai);
+                                place.setB_centro(bi);
+                                place.setRadio(radioi);
+
                                 long id_place = sqliteHelper.addPlace(place);
                                 place.setId(String.valueOf(id_place));
                                 //nodos
-                                Nodo nodox = new Nodo();Nodo nodox2 = new Nodo();Nodo nodow = new Nodo();Nodo nodoh = new Nodo();
-                                nodox.setLat(utils.getLat(zone.getLat(), y));nodox.setLon(utils.getLon(zone.getLon(), x));
-                                nodox.setId_place(place);nodox.setType(0);// 0->x, 1->w, 2->h,3->x2
-                                nodow.setLat(utils.getLat(zone.getLat(), y));nodow.setLon(utils.getLon(zone.getLon(), x + w));
-                                nodow.setId_place(place);nodow.setType(1);
-                                nodoh.setLat(utils.getLat(zone.getLat(), y + h));nodoh.setLon(utils.getLon(zone.getLon(),x));
-                                nodoh.setId_place(place);nodoh.setType(2);
-                                nodox2.setLat(utils.getLat(zone.getLat(), y + h));nodox2.setLon(utils.getLon(zone.getLon(), x + w));
-                                nodox2.setId_place(place);nodox2.setType(3);
-                                sqliteHelper.addNode(nodox);sqliteHelper.addNode(nodow);sqliteHelper.addNode(nodox2);sqliteHelper.addNode(nodoh);
+                                if (label.equals("rotonda")){
+
+                                    //cast
+                                    double a = (double)ai;
+                                    double b = (double)bi;
+                                    double radio = (double)radioi;
+
+                                    double angulo = 0; //360/12
+
+                                    //meter nodos restantes
+                                    for (int p = 1; p <= 16; p++){
+                                        //puntos
+
+
+                                        Nodo nodo = new Nodo();
+                                        double a_centro = a + radio * Math.cos(angulo);
+                                        double b_centro = b + radio * Math.sin(angulo);
+                                        double lon = utils.getLon(zone.getLon(),a_centro);
+                                        double lat = utils.getLat(zone.getLat(),b_centro);
+                                        nodo.setLat(lat);
+                                        nodo.setLon(lon);
+                                        nodo.setType(p);
+                                        nodo.setId_place(place);
+
+                                        angulo+=(22.5 * Math.PI) / 180;//360/16 y en radianes
+                                        //añadimos BD
+                                        sqliteHelper.addNode(nodo);
+                                    }
+
+                                }else {
+                                    Nodo nodox = new Nodo();Nodo nodox2 = new Nodo();Nodo nodow = new Nodo();Nodo nodoh = new Nodo();
+                                    nodox.setLat(utils.getLat(zone.getLat(), y));nodox.setLon(utils.getLon(zone.getLon(), x));
+                                    nodox.setId_place(place);nodox.setType(0);// 0->x, 1->w, 2->h,3->x2
+                                    nodow.setLat(utils.getLat(zone.getLat(), y));nodow.setLon(utils.getLon(zone.getLon(), x + w));
+                                    nodow.setId_place(place);nodow.setType(1);
+                                    nodoh.setLat(utils.getLat(zone.getLat(), y + h));nodoh.setLon(utils.getLon(zone.getLon(),x));
+                                    nodoh.setId_place(place);nodoh.setType(2);
+                                    nodox2.setLat(utils.getLat(zone.getLat(), y + h));nodox2.setLon(utils.getLon(zone.getLon(), x + w));
+                                    nodox2.setId_place(place);nodox2.setType(3);
+                                    sqliteHelper.addNode(nodox);sqliteHelper.addNode(nodow);sqliteHelper.addNode(nodox2);sqliteHelper.addNode(nodoh);
+                                }
                             }
                         }
                     }

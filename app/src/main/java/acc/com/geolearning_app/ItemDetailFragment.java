@@ -131,23 +131,30 @@ public class ItemDetailFragment extends Fragment {
                 int y = lugar.getY();
                 int w = lugar.getW();
                 int h = lugar.getH();
-                cnvs.drawBitmap(bmp,0,0,null);
-                cnvs.drawRect(x,y,w+x,h + y , paint);
+
+
+                if (lugar.getPlace_type().equals("rotonda")){
+                    cnvs.drawBitmap(bmp, 0, 0, null);
+                    cnvs.drawCircle(lugar.getA_centro(),lugar.getB_centro(),lugar.getRadio(),paint);
+                }else {
+                    cnvs.drawBitmap(bmp, 0, 0, null);
+                    cnvs.drawRect(x, y, w + x, h + y, paint);
+                }
 
                 //añadir label
                 Paint paint2=new Paint();
                 paint2.setColor(Color.BLACK);
                 paint2.setTextSize(15);
-                cnvs.drawText(lugar.getPlace_type(),x,y,paint2);
+                if (lugar.getPlace_type().equals("rotonda"))
+                    cnvs.drawText(lugar.getPlace_type(),lugar.getA_centro(),lugar.getB_centro(),paint2);
+                else
+                    cnvs.drawText(lugar.getPlace_type(),x,y,paint2);
 
             }
 
             image.setImageBitmap(bmp);
 
             //--
-
-
-
 
         }
 

@@ -15,6 +15,10 @@ public class Place {
     private ArrayList<Tag> tags = new ArrayList<>();
     private ArrayList<Nodo> nodos = new ArrayList<>();
 
+    //si es una rotonda
+    private Integer a_centro;
+    private Integer b_centro;
+    private Integer radio;
 
 
     public Place(Integer x, Integer y, Integer w, Integer h, String place_type, Zone id_map, Double prob) {
@@ -127,5 +131,29 @@ public class Place {
 
     public void deleteNodo(Nodo nodo){
         this.nodos.remove(nodo);
+    }
+
+    public Integer getA_centro() {
+        return a_centro;
+    }
+
+    public void setA_centro(Integer a_centro) {
+        this.a_centro = a_centro;
+    }
+
+    public Integer getB_centro() {
+        return b_centro;
+    }
+
+    public void setB_centro(Integer b_centro) {
+        this.b_centro = b_centro;
+    }
+
+    public Integer getRadio() {
+        return radio;
+    }
+
+    public void setRadio(Integer radio) {
+        this.radio = radio;
     }
 }

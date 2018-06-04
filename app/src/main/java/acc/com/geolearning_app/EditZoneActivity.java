@@ -2,7 +2,6 @@ package acc.com.geolearning_app;
 
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.design.widget.FloatingActionButton;
@@ -15,11 +14,8 @@ import org.osmdroid.config.Configuration;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
-import org.osmdroid.views.overlay.Marker;
-import org.osmdroid.views.overlay.Polygon;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import acc.com.geolearning_app.db.SqliteHelper;
 import acc.com.geolearning_app.dto.Nodo;
@@ -45,7 +41,7 @@ public class EditZoneActivity extends AppCompatActivity {
         sqliteHelper = new SqliteHelper(this);
 
 
-        //TODO peticion a OSM server
+        //peticion a OSM server
         FloatingActionButton floatingActionButton = (FloatingActionButton) findViewById(R.id.imageButton_edit);
         floatingActionButton.setOnClickListener(new View.OnClickListener() {
             @Override

@@ -88,11 +88,42 @@ public class utils {
 
     }
 
+    //pixels coordinates to lon coordinates in X --> para circulos
+    public static double getLon(double lon_central, double x){
+
+        double lon_final;
+        double central = x;
+
+
+        lon_final = (lon_DI * central ) / 400;
+
+        lon_final = (lon_central - lon_DI/2) + lon_final;
+
+        return  lon_final;
+
+    }
+
+
     //pixels coordinates to Lat coordinates in Y -->
     public static double getLat(double lat_central, int y){
 
         double lat_final;
         int central = 400 - y;
+
+
+        lat_final = (lat_AA * central ) / 400;
+
+        lat_final = (lat_central - lat_AA/2) + lat_final;
+
+        return  lat_final;
+
+    }
+
+    //pixels coordinates to Lat coordinates in Y --> para circulos
+    public static double getLat(double lat_central, double y){
+
+        double lat_final;
+        double central = 400 - y;
 
 
         lat_final = (lat_AA * central ) / 400;
@@ -117,7 +148,7 @@ public class utils {
                         nodoh.getPosition(),
                         nodox.getPosition(),
                         nodow.getPosition()
-                ).strokeColor(R.color.colorPrimary).fillColor(0x00000000).strokeWidth(20);
+                ).strokeColor(R.color.colorPrimary).fillColor(0x00000000).strokeWidth(10);
 
         return googleMap.addPolygon(rectOptions);
 
@@ -130,45 +161,91 @@ public class utils {
 
             List<GeoPoint> geoPoints = new ArrayList<>();
             ArrayList<Nodo> nodos = lugar.getNodos();
-            GeoPoint x = new GeoPoint(nodos.get(0).getLat(), nodos.get(0).getLon());
-            GeoPoint w = new GeoPoint(nodos.get(1).getLat(), nodos.get(1).getLon());
-            GeoPoint h = new GeoPoint(nodos.get(2).getLat(), nodos.get(2).getLon());
-            GeoPoint x2 = new GeoPoint(nodos.get(3).getLat(), nodos.get(3).getLon());
-            //add your points here;
-            geoPoints.add(x);
-            geoPoints.add(w);
-            geoPoints.add(x2);
-            geoPoints.add(h);
-            geoPoints.add(x); //cierre de poligono
+            //TODO rotondas
+            if (lugar.getPlace_type().equals("rotonda")){
 
-            Polygon polygon = new Polygon();    //see note below
-            polygon.setFillColor(Color.TRANSPARENT);
-            geoPoints.add(geoPoints.get(1));    //forces the loop to close
-            polygon.setPoints(geoPoints);
-            polygon.setTitle("\n A sample polygon");
-
-
-            /*int lat_medio = (lugar.getY() + lugar.getH() / 2);
-            int lon_medio = (lugar.getX() + lugar.getW() / 2);*/
-
-            Marker startMarker = new Marker(map);
-            startMarker.setPosition(new GeoPoint(nodos.get(0).getLat(), nodos.get(0).getLon()));
-            startMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-            startMarker.setTitle("ID: " + lugar.getId() + "\n" + "Class: " + lugar.getPlace_type());
-
-            startMarker.setOnMarkerClickListener(new Marker.OnMarkerClickListener() {
-                @Override
-                public boolean onMarkerClick(Marker marker, MapView mapView) {
-                    Toast.makeText(mapView.getContext(),"ID: " + lugar.getId(), Toast.LENGTH_SHORT).show();
-                    return true;
+                for (Nodo nodo: nodos){
+                    GeoPoint puntitoNodo = new GeoPoint(nodo.getLat(),nodo.getLon());
+                    geoPoints.add(puntitoNodo);
                 }
-            });
+
+            }else {
+                GeoPoint x = new GeoPoint(nodos.get(0).getLat(), nodos.get(0).getLon());
+                GeoPoint w = new GeoPoint(nodos.get(1).getLat(), nodos.get(1).getLon());
+                GeoPoint h = new GeoPoint(nodos.get(2).getLat(), nodos.get(2).getLon());
+                GeoPoint x2 = new GeoPoint(nodos.get(3).getLat(), nodos.get(3).getLon());
+                //add your points here;
+                geoPoints.add(x);
+                geoPoints.add(w);
+                geoPoints.add(x2);
+                geoPoints.add(h);
+                geoPoints.add(x); //cierre de poligono
+            }
+
+                Polygon polygon = new Polygon();    //see note below
+                polygon.setFillColor(Color.TRANSPARENT);
+                geoPoints.add(geoPoints.get(0));    //forces the loop to close
+                polygon.setPoints(geoPoints);
+                polygon.setTitle("\n Figura:" + lugar.getPlace_type());
 
 
-            map.getOverlayManager().add(polygon);
-            map.getOverlays().add(startMarker);
+                /*int lat_medio = (lugar.getY() + lugar.getH() / 2);
+                int lon_medio = (lugar.getX() + lugar.getW() / 2);*/
+
+                Marker startMarker = new Marker(map);
+                startMarker.setPosition(new GeoPoint(nodos.get(0).getLat(), nodos.get(0).getLon()));
+                startMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+                startMarker.setTitle("ID: " + lugar.getId() + "\n" + "Class: " + lugar.getPlace_type());
+
+                startMarker.setOnMarkerClickListener(new Marker.OnMarkerClickListener() {
+                    @Override
+                    public boolean onMarkerClick(Marker marker, MapView mapView) {
+                        Toast.makeText(mapView.getContext(),"ID: " + lugar.getId(), Toast.LENGTH_SHORT).show();
+                        return true;
+                    }
+                });
+
+
+                map.getOverlayManager().add(polygon);
+                map.getOverlays().add(startMarker);
         }
 
+    }
+
+    //ROTONDAS
+    public static Nodo getNodoCirculo(int posicion, ArrayList<Nodo> nodos){
+        for (Nodo nodo: nodos){
+            if (nodo.getType()==posicion){
+                return nodo;
+            }
+        }
+
+        return new Nodo();
+    }
+
+    //dibujar circunferencia en GoogleMaps
+    public static com.google.android.gms.maps.model.Polygon createCirculo(ArrayList<com.google.android.gms.maps.model.Marker> marcadores, GoogleMap googleMap){
+
+        PolygonOptions rectOptions = new PolygonOptions().strokeColor(R.color.colorPrimary).fillColor(0x00000000).strokeWidth(10);
+        for (com.google.android.gms.maps.model.Marker marker: marcadores){
+            rectOptions.add(marker.getPosition());
+        }
+
+        return googleMap.addPolygon(rectOptions);
+    }
+
+    //ACTUALIZAR circunferencia
+    public static com.google.android.gms.maps.model.Polygon updateCirculo(com.google.android.gms.maps.model.Marker marker, int pos, ArrayList<com.google.android.gms.maps.model.Marker> marcadores, GoogleMap googleMap){
+
+        PolygonOptions rectOptions = new PolygonOptions().strokeColor(R.color.colorPrimary).fillColor(0x00000000).strokeWidth(10);
+        for (com.google.android.gms.maps.model.Marker marcador: marcadores){
+            if (marcador.getTitle().equals(String.valueOf(pos))){
+                marcador.setPosition(new LatLng(marker.getPosition().latitude,marker.getPosition().longitude));
+            }
+            rectOptions.add(marcador.getPosition());
+        }
+
+        return googleMap.addPolygon(rectOptions);
     }
 
     public static void writeXMLToOSM(ArrayList<Place> lugares, Zone zone){
