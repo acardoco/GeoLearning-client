@@ -1,13 +1,11 @@
 package acc.com.geolearning_app.util;
 
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.widget.ArrayAdapter;
 import android.widget.Toast;
 
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolygonOptions;
 
 import org.osmdroid.util.GeoPoint;
@@ -18,7 +16,7 @@ import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
-import java.io.File;
+import java.io.StringWriter;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -161,15 +159,15 @@ public class utils {
 
             List<GeoPoint> geoPoints = new ArrayList<>();
             ArrayList<Nodo> nodos = lugar.getNodos();
-            //TODO rotondas
-            if (lugar.getPlace_type().equals("rotonda")){
+
+            if (lugar.getPlace_type().equals("rotonda")){ //Rotondas
 
                 for (Nodo nodo: nodos){
                     GeoPoint puntitoNodo = new GeoPoint(nodo.getLat(),nodo.getLon());
                     geoPoints.add(puntitoNodo);
                 }
 
-            }else {
+            }else { //poligonos
                 GeoPoint x = new GeoPoint(nodos.get(0).getLat(), nodos.get(0).getLon());
                 GeoPoint w = new GeoPoint(nodos.get(1).getLat(), nodos.get(1).getLon());
                 GeoPoint h = new GeoPoint(nodos.get(2).getLat(), nodos.get(2).getLon());
@@ -376,6 +374,194 @@ public class utils {
     } catch (TransformerException tfe) {
         tfe.printStackTrace();
     }
+
+    }
+
+    //envia un xml con changeset
+    public static String writeChangeset(){
+
+        /*
+
+        <osm>
+          <changeset>
+            <tag k="created_by" v="JOSM 1.61"/>
+            <tag k="comment" v="Just adding some streetnames"/>
+            ...
+          </changeset>
+          ...
+        </osm>
+         */
+
+        try{
+            DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
+
+            // root elements
+            Document doc = docBuilder.newDocument();
+            Element rootElement = doc.createElement("osm");
+            doc.appendChild(rootElement);
+            // set attribute to staff element
+            Attr attr1 = doc.createAttribute("version");
+            attr1.setValue("0.6");
+            rootElement.setAttributeNode(attr1);
+
+            Attr attr2 = doc.createAttribute("generator");
+            attr2.setValue("GeoLearning Server");
+            rootElement.setAttributeNode(attr2);
+
+
+            //el changeset
+            Element changeset = doc.createElement("changeset");
+            rootElement.appendChild(changeset);
+
+            //tags esenciales
+            Element tag1 = doc.createElement("tag");
+            changeset.appendChild(tag1);
+            tag1.setAttribute("created_by","GeoLearning");
+
+            Element tag2 = doc.createElement("tag");
+            changeset.appendChild(tag2);
+            tag1.setAttribute("comment","deep learning detector");
+
+            // write the content into xml file
+            TransformerFactory transformerFactory = TransformerFactory.newInstance();
+            Transformer transformer = transformerFactory.newTransformer();
+
+            StringWriter writer = new StringWriter();//para pasar el resultado a String
+            StreamResult result = new StreamResult(writer);
+
+            DOMSource source = new DOMSource(doc);
+            //StreamResult result = new StreamResult(System.out);// Output to console for testing
+
+            transformer.transform(source, result);//guarda el DOMSource en el Streamresult
+
+            return   writer.toString();
+
+        } catch (ParserConfigurationException pce) {
+            pce.printStackTrace();
+        } catch (TransformerException tfe) {
+            tfe.printStackTrace();
+        }
+
+        return null;
+    }
+
+    //Crea un nodo del lugar
+    public static String writeNodoOSM(Nodo nodo){
+        /*
+        <osm>
+         <node changeset="12" lat="..." lon="...">
+           <tag k="note" v="Just a node"/>
+           ...
+         </node>
+        </osm>
+         */
+
+        try{
+            DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
+
+            // root elements
+            Document doc = docBuilder.newDocument();
+            Element rootElement = doc.createElement("osm");
+            doc.appendChild(rootElement);
+
+            Element node1 = doc.createElement("node");
+            rootElement.appendChild(node1);
+            node1.setAttribute("changeset",nodo.getId_changeset());
+            node1.setAttribute("lat",String.valueOf(nodo.getLat()));
+            node1.setAttribute("lon",String.valueOf(nodo.getLon()));
+
+            // write the content into xml file
+            TransformerFactory transformerFactory = TransformerFactory.newInstance();
+            Transformer transformer = transformerFactory.newTransformer();
+
+            StringWriter writer = new StringWriter();//para pasar el resultado a String
+            StreamResult result = new StreamResult(writer);
+
+            DOMSource source = new DOMSource(doc);
+            //StreamResult result = new StreamResult(System.out);// Output to console for testing
+
+            transformer.transform(source, result);//guarda el DOMSource en el Streamresult
+
+            return   writer.toString();
+
+        } catch (ParserConfigurationException pce) {
+            pce.printStackTrace();
+        } catch (TransformerException tfe) {
+            tfe.printStackTrace();
+        }
+
+        return null;
+
+    }
+
+    //Crea un xml del lugar
+    public static String writeLugarOSM(Place place){
+
+        /*
+        <osm>
+         <way changeset="12">
+           <tag k="note" v="Just a way"/>
+           ...
+           <nd ref="123"/>
+           <nd ref="4345"/>
+           ...
+         </way>
+        </osm>
+         */
+
+        try{
+            DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
+
+            // root elements
+            Document doc = docBuilder.newDocument();
+            Element rootElement = doc.createElement("osm");
+            doc.appendChild(rootElement);
+
+            Element way = doc.createElement("way");
+            rootElement.appendChild(way);
+            way.setAttribute("changeset",place.getId_changeset());
+
+            //TAGS
+            ArrayList<Tag> tags = place.getTags();
+            for (Tag tag: tags){
+                Element tag_ele = doc.createElement("tag");
+                tag_ele.setAttribute("k", tag.getKey());
+                tag_ele.setAttribute("v",tag.getValue());
+                way.appendChild(tag_ele);
+            }
+
+            //NODOS
+            ArrayList<Nodo> nodos = place.getNodos();
+            for (Nodo nodo: nodos){
+                Element nd = doc.createElement("nd");
+                nd.setAttribute("ref",nodo.getId_changeset());
+                way.appendChild(nd);
+            }
+
+            // write the content into xml file
+            TransformerFactory transformerFactory = TransformerFactory.newInstance();
+            Transformer transformer = transformerFactory.newTransformer();
+
+            StringWriter writer = new StringWriter();//para pasar el resultado a String
+            StreamResult result = new StreamResult(writer);
+
+            DOMSource source = new DOMSource(doc);
+            //StreamResult result = new StreamResult(System.out);// Output to console for testing
+
+            transformer.transform(source, result);//guarda el DOMSource en el Streamresult
+
+            return   writer.toString();
+
+        } catch (ParserConfigurationException pce) {
+            pce.printStackTrace();
+        } catch (TransformerException tfe) {
+            tfe.printStackTrace();
+        }
+
+        return null;
 
     }
 

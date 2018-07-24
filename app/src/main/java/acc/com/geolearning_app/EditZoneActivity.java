@@ -8,6 +8,7 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import org.osmdroid.api.IMapController;
 import org.osmdroid.config.Configuration;
@@ -46,7 +47,12 @@ public class EditZoneActivity extends AppCompatActivity {
         floatingActionButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+
+                //convierte los datos en archivo .osm
                 utils.writeXMLToOSM(lugares,zone);
+
+                //informa al usuario que ya esta subido el contenido
+                Toast.makeText(getApplicationContext(),R.string.imported_OSM,Toast.LENGTH_SHORT);
 
             }
         });

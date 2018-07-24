@@ -13,7 +13,6 @@ import java.util.List;
 import acc.com.geolearning_app.dto.Nodo;
 import acc.com.geolearning_app.dto.Place;
 import acc.com.geolearning_app.dto.Tag;
-import acc.com.geolearning_app.dto.User;
 import acc.com.geolearning_app.dto.Zone;
 
 public class SqliteHelper extends SQLiteOpenHelper{
@@ -64,6 +63,8 @@ public class SqliteHelper extends SQLiteOpenHelper{
     public static final String KEY_TYPE_NODE ="type";
     //misma foreign key que tag
 
+    public static final String KEY_ID_CHANGESET = "id_changeset";
+
     //CREAR tabla de mapas
     public static final String SQL_TABLE_MAP = " CREATE TABLE " + TABLE_MAP
             + "( "
@@ -85,6 +86,7 @@ public class SqliteHelper extends SQLiteOpenHelper{
             + KEY_A_CENTRO + " INTEGER,"
             + KEY_B_CENTRO + " INTEGER,"
             + KEY_RADIO + " INTEGER,"
+            + KEY_ID_CHANGESET + " INTEGER,"
             + FOREIGN_KEY_MAP + " INTEGER, "
             + " FOREIGN KEY(" + FOREIGN_KEY_MAP + ") REFERENCES " +  TABLE_MAP + "(" + KEY_ID_MAP + ")"
             + " ) ";
@@ -105,6 +107,7 @@ public class SqliteHelper extends SQLiteOpenHelper{
             + KEY_LAT_NODE + " REAL, "
             + KEY_LON_NODE + " REAL, "
             + KEY_TYPE_NODE + " INTEGER, " // 0->x, 1->w, 2->h,3->x2
+            + KEY_ID_CHANGESET + " INTEGER, "
             + FOREIGN_KEY_PLACE + " INTEGER, "
             + " FOREIGN KEY(" + FOREIGN_KEY_PLACE + ") REFERENCES " +  TABLE_PLACE + "(" + KEY_ID_PLACE + ")"
             + " ) ";
@@ -170,6 +173,7 @@ public class SqliteHelper extends SQLiteOpenHelper{
         values.put(KEY_A_CENTRO, place.getA_centro());
         values.put(KEY_B_CENTRO, place.getB_centro());
         values.put(KEY_RADIO, place.getRadio());
+        values.put(KEY_ID_CHANGESET, "0");
         values.put(FOREIGN_KEY_MAP, place.getId_map().getId());
 
         return db.insert(TABLE_PLACE, null, values);
@@ -204,6 +208,7 @@ public class SqliteHelper extends SQLiteOpenHelper{
         values.put(KEY_LAT_NODE,node.getLat());
         values.put(KEY_LON_NODE,node.getLon());
         values.put(KEY_TYPE_NODE,node.getType()); // 0->x, 1->w, 2->h,3->x2
+        values.put(KEY_ID_CHANGESET, "0");
         values.put(FOREIGN_KEY_PLACE,node.getId_place().getId());
 
         return db.insert(TABLE_NODE, null, values);
@@ -252,7 +257,7 @@ public class SqliteHelper extends SQLiteOpenHelper{
     public ArrayList<Place> getAllElements(String id) {
         ArrayList<Place> list = new ArrayList<Place>();
         // Select All Query
-        String selectQuery = "SELECT DISTINCT  P.id_place, P.x, P.y, P.w, P.h, P.a_centro, P.b_centro, P.radio, P.place_type  FROM "
+        String selectQuery = "SELECT DISTINCT  P.id_place, P.x, P.y, P.w, P.h, P.a_centro, P.b_centro, P.radio, P.place_type, P.id_changeset  FROM "
                 + TABLE_PLACE
                 + " P JOIN "
                 + TABLE_MAP
@@ -276,6 +281,7 @@ public class SqliteHelper extends SQLiteOpenHelper{
                         obj.setB_centro(cursor.getInt(6));
                         obj.setRadio(cursor.getInt(7));
                         obj.setPlace_type(cursor.getString(8));
+                        obj.setId_changeset(cursor.getString(9));
                         obj.setTags(getAllTags(obj.getId()));
                         list.add(obj);
 
@@ -335,7 +341,7 @@ public class SqliteHelper extends SQLiteOpenHelper{
 
         ArrayList<Nodo> list = new ArrayList<Nodo>();
         // Select All Query
-        String selectQuery = "SELECT DISTINCT  N.id_node, N.lat, N.lon, N.type FROM "
+        String selectQuery = "SELECT DISTINCT  N.id_node, N.lat, N.lon, N.type, N.id_changeset FROM "
                 + TABLE_NODE
                 + " N JOIN "
                 + TABLE_PLACE
@@ -355,6 +361,7 @@ public class SqliteHelper extends SQLiteOpenHelper{
                         obj.setLat(cursor.getDouble(1));
                         obj.setLon(cursor.getDouble(2));
                         obj.setType(cursor.getInt(3));
+                        obj.setId_changeset(cursor.getString(4));
                         list.add(obj);
 
                     } while (cursor.moveToNext());
@@ -428,11 +435,29 @@ public class SqliteHelper extends SQLiteOpenHelper{
 
     }
 
+    public void updatePlaceChangeset(Place place){
+        String selectQuery = "UPDATE " + TABLE_PLACE + " SET "
+                + KEY_ID_CHANGESET + "=" + place.getId_changeset()
+                + " WHERE " + KEY_ID_PLACE + "=" + place.getId();
+        SQLiteDatabase db = this.getReadableDatabase();
+
+        db.execSQL(selectQuery);
+    }
+
     public void updateNodo(Nodo nodo){
         String selectQuery = "UPDATE " + TABLE_NODE + " SET "
                 + KEY_LAT_NODE + "=" + nodo.getLat()
                 + ","
                 + KEY_LON_NODE + "=" + nodo.getLon()
+                + " WHERE " + KEY_ID_NODE + "=" + nodo.getId();
+        SQLiteDatabase db = this.getReadableDatabase();
+
+        db.execSQL(selectQuery);
+    }
+
+    public void updateNodoChangeset(Nodo nodo){
+        String selectQuery = "UPDATE " + TABLE_NODE + " SET "
+                + KEY_ID_CHANGESET + "=" + nodo.getId_changeset()
                 + " WHERE " + KEY_ID_NODE + "=" + nodo.getId();
         SQLiteDatabase db = this.getReadableDatabase();
 

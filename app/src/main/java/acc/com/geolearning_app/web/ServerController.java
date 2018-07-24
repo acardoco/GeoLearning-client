@@ -14,6 +14,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -45,8 +46,9 @@ public class ServerController extends AppCompatActivity {
     private Context context;
     private DrawerLayout drawerLayout;
 
-    private String SERVER_URL_MAP = "http://192.168.0.159:5000/predict";//192.168.0.159
-    private String SERVER_URL_MAP_LIST = "http://192.168.0.159:5000/predict_query";
+    private String SERVER_URL_MAP = "http://192.168.0.26:5000/predict";//192.168.0.159
+    private String SERVER_URL_MAP_LIST = "http://192.168.0.26:5000/predict_query";
+    private String SERVER_OSM = "/api/0.6/changeset/create";
 
     SqliteHelper sqliteHelper;
 
@@ -97,6 +99,31 @@ public class ServerController extends AppCompatActivity {
         myTask.execute(arg);
 
     }
+
+    //TODO
+    public void subirCandidatesOSM(ArrayList<Place> lugares){
+
+        for (Place lugar: lugares){
+
+            ArrayList<Nodo> nodos = sqliteHelper.getAllNodos(lugar.getId());
+
+            //obtener changesets de los nodos
+            for (Nodo nodo: nodos){
+
+                AsyncTask myTask  = new putOSMChangeset(nodo);
+                myTask.execute();
+            }
+
+            //crear nodos primero
+            for (Nodo nodo: nodos){
+                //crear nodos
+            }
+
+            //solicitar changeset
+            //crear lugar
+
+        }
+    }
     /**************************************************/
     /**************************************************/
     /**************************************************/
@@ -107,9 +134,9 @@ public class ServerController extends AppCompatActivity {
     /**************************************************/
     /**************************************************/
     /**************************************************/
-    //TODO AsyncTask <Input, Variables a meter en OnProgressUpdate, tipo del resultado>
+    //AsyncTask <Input, Variables a meter en OnProgressUpdate, tipo del resultado>
 
-    //TODO se pasa un json con lat y lon y se obtiene un hasmap con los candidatos
+    //se pasa un json con lat y lon y se obtiene un hasmap con los candidatos
     private class GetUrlJsonTask extends AsyncTask<String,Void,String>{
 
         @Override
@@ -129,7 +156,7 @@ public class ServerController extends AppCompatActivity {
                 connection.setRequestMethod("POST");
                 connection.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
                 connection.setRequestProperty("Accept","application/json");
-                connection.setDoOutput(true); //para peticiones POST
+                connection.setDoOutput(true); //para peticiones POST y PUT
                 connection.connect();
 
                 String json = "";
@@ -293,7 +320,7 @@ public class ServerController extends AppCompatActivity {
 
     private class GetListJsonTask extends  AsyncTask<String,Void, String>{
 
-        ArrayList<Zone> zonas = new ArrayList<>();
+        ArrayList<Zone> zonas;
 
         GetListJsonTask(ArrayList<Zone> lugares){
             this.zonas = lugares;
@@ -465,6 +492,81 @@ public class ServerController extends AppCompatActivity {
 
             } catch (JSONException e) {
                 e.printStackTrace();
+            }
+
+        }
+    }
+
+    //Solicita el id_changeset
+    private class putOSMChangeset extends  AsyncTask<String,Void, String>{
+
+        Nodo nodo;
+
+        String id_changeset;
+
+        putOSMChangeset(Nodo nodo) {this.nodo=nodo;}
+
+        @Override
+        protected String doInBackground(String... strings) {
+
+            //pedir changeset
+            if(android.os.Debug.isDebuggerConnected())
+                android.os.Debug.waitForDebugger();
+
+            URL url = stringToURL(SERVER_OSM);
+            HttpURLConnection connection = null;
+
+            try{
+
+            //cabeceras
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("PUT");
+            connection.setRequestProperty("Content-Type", "text/xml;charset=UTF-8");
+            connection.setRequestProperty("Accept","text/xml");
+            connection.setDoOutput(true);
+            connection.connect();
+
+            //crear osm changeset
+            String body = utils.writeChangeset(); //este seria el archivo osm/xml
+            OutputStream output = new BufferedOutputStream(connection.getOutputStream());
+            output.write(body.getBytes());
+            output.flush();
+            output.close();
+
+            //se lee la respuesta con el id
+            //leer respuesta
+            BufferedReader in = new BufferedReader(
+                    new InputStreamReader(connection.getInputStream()));
+            String inputLine;
+            StringBuffer response = new StringBuffer();
+            while ((inputLine = in.readLine()) != null) {
+                response.append(inputLine);
+            }
+            in.close();
+
+            //cerrar conexion
+            connection.disconnect();
+
+            return response.toString();
+
+            }catch(IOException e){
+                e.printStackTrace();
+            }finally{
+                // Disconnect the http url connection
+                connection.disconnect();
+            }
+
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(String s) {
+
+            server_status.setBUSY_SERVER(false);
+            if (s!=null){
+                //añadir id_changeset al nodo
+                nodo.setId_changeset(s);
+                sqliteHelper.updateNodoChangeset(nodo);
             }
 
         }

@@ -8,6 +8,9 @@ public class Nodo {
     private Integer type; // 0->x, 1->w, 2->h,3->x2
     Place id_place;
 
+    private String id_changeset;
+    private String id_osm;
+
     public Nodo() {
     }
 
@@ -49,5 +52,21 @@ public class Nodo {
 
     public void setType(Integer type) {
         this.type = type;
+    }
+
+    public String getId_changeset() {
+        return id_changeset;
+    }
+
+    public void setId_changeset(String id_changeset) {
+        this.id_changeset = id_changeset;
+    }
+
+    public String getId_osm() {
+        return id_osm;
+    }
+
+    public void setId_osm(String id_osm) {
+        this.id_osm = id_osm;
     }
 }

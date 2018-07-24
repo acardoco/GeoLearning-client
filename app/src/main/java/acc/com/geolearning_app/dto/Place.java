@@ -20,6 +20,8 @@ public class Place {
     private Integer b_centro;
     private Integer radio;
 
+    private String id_changeset;
+
 
     public Place(Integer x, Integer y, Integer w, Integer h, String place_type, Zone id_map, Double prob) {
         this.x = x;
@@ -155,5 +157,13 @@ public class Place {
 
     public void setRadio(Integer radio) {
         this.radio = radio;
+    }
+
+    public String getId_changeset() {
+        return id_changeset;
+    }
+
+    public void setId_changeset(String id_changeset) {
+        this.id_changeset = id_changeset;
     }
 }
